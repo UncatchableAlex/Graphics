@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+    <script>
+        'use strict';
+        function drawTriangle(size) {
+            let tri = ''
+            for (let i = 1; i <= (size * 2) - 1; i++) {
+                // -|i - size| + size is the algebriac function for triangle
+                tri += '*'.repeat(-Math.abs(i - size) + size);
+                tri += '\n';
+            }
+            console.log(tri);
+        }
+        drawTriangle(10);
+    </script>
+</html>

@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Hello WebGL</title>
+    <script type="vertex-shader" id="vertexShader">
+        attribute vec2 a_position;
+        void main() {
+        	gl_Position = vec4(a_position, 0, 1);
+        }
+    </script>
+    <script type="fragment-shader" id="fragmentShader">
+        precision highp float; //float precision settings
+
+        void main() {
+            gl_FragColor = vec4(1,0,0,1); // rbga
+        }
+    </script>
+</head>
+<body>
+	<canvas width="500" height="500" id="webgl-canvas"></canvas>
+    <script src="webgl-debug.js"></script> <!--This adds the webgl debug library-->
+    <script src="webgl-lint.js"></script> <!--This adds the webgl lint library-->
+    <script type="text/javascript">
+        "use strict"; // use strict javascript compiling
+
+        // -----------------------------------------
+        // Initialization
+        // -----------------------------------------
+        let canvas = document.getElementById("webgl-canvas");
+        let	gl = canvas.getContext("webgl"); // WebGLRenderingContext
+        // post error if not supported
+        if(!gl){ console.error("WebGL context is not available."); }
+
+        gl = WebGLDebugUtils.makeDebugContext(gl); // enable debugging
+
+        gl.clearColor(0.85, 0.95, 0.9, 1); // set clear color (RGBA)
+        gl.clear(gl.COLOR_BUFFER_BIT); // clear color buffers
+
+        // -----------------------------------------
+        // Create Shader Program
+        // -----------------------------------------
+        // TODO: fetch shader program text from DOM (DOM basically means the HTML tags at the beginning,
+        // we are looking for the scripts containing the vertex and fragment shader source code.)
+        // functions to use: document.getElementById()
+        let vertexShaderSource = document.getElementById("vertexShader").text;
+        let fragmentShaderSource = document.getElementById("fragmentShader").text;
+        
+        // TODO: create the vertex and fragment shader objects, attach source code and compile
+        // functions to use:    gl.createShader()
+        //                      gl.shaderSource()
+        //                      gl.compileShader()
+        let vertexShader = gl.createShader(gl.VERTEX_SHADER);
+        let fragmentShader = gl.createShader(gl.FRAGMENT_SHADER);
+        gl.shaderSource(vertexShader, vertexShaderSource);
+        gl.shaderSource(fragmentShader, fragmentShaderSource);
+        gl.compileShader(vertexShader);
+        gl.compileShader(fragmentShader); 
+
+        // TODO: check for compiler errors in vertex and fragment shader
+        // functions to use:    gl.getShaderParameter() with gl.COMPILE_STATUS
+        //                      gl.getShaderInfoLog()
+        let vertexSuccess = gl.getShaderParameter(vertexShader, gl.COMPILE_STATUS);
+        console.log(gl.getShaderInfoLog(vertexShader));
+        let fragmentSuccess = gl.getShaderParameter(fragmentShader, gl.COMPILE_STATUS);
+        console.log(gl.getShaderInfoLog(fragmentShader));
+        
+        // TODO: create shader program and attach vertex and fragment shader
+        // functions to use:    gl.createProgram()
+        //                      gl.attachShader()
+        let program = gl.createProgram();
+        gl.attachShader(program, vertexShader);
+        gl.attachShader(program, fragmentShader);
+        // TODO: Link Program, completing its preparation and uploading to the GPU
+        // functions to use:    gl.linkProgram()
+        gl.linkProgram(program);
+
+        // TODO: Check for errors during linking
+        // functions to use:    gl.getProgramParameter() with gl.LINK_STATUS
+        //                      gl.getProgramInfoLog()
+        let linkSuccess = gl.getProgramParameter(program, gl.LINK_STATUS);
+        console.log(gl.getProgramInfoLog(program));
+        // TODO: Validate that everything worked and the program is now ready to run on the GPU
+        // functions to use:    gl.validateProgram()
+        //                      gl.getProgramParameter() with gl.VALIDATE_STATUS
+        //                      gl.getProgramInfoLog()
+        gl.validateProgram(program);
+        let validateStatus = gl.getProgramParameter(program, gl.VALIDATE_STATUS);
+        console.log(gl.getProgramInfoLog(program));
+        // -----------------------------------------
+        // Create Buffer and upload position data
+        // -----------------------------------------
+
+        // position data as Float32Array
+        let positionArray = new Float32Array([
+            0.0, 0.0, // first point
+            0.5, 0.0, // second point
+            0.5, 0.5, // third point
+        ]);
+
+        // TODO: create buffer object
+        // functions to use:    gl.createBuffer()
+        let position_buffer = gl.createBuffer();
+
+        // TODO: bind buffer, to make it the currently active buffer
+        // functions to use:    gl.bindBuffer()
+        gl.bindBuffer(gl.ARRAY_BUFFER, position_buffer);
+
+        //  TODO: set buffer data. (insert the data in positionArray to the buffer)
+        // functions to use:    gl.bufferData()
+        gl.bufferData(gl.ARRAY_BUFFER, positionArray, gl.STATIC_DRAW);
+
+        // -----------------------------------------
+        // Connecting the Buffer to the Attribtue: Vertex Attribute Pointer
+        // -----------------------------------------
+        // TODO: set active shader program
+        // functions to use:    gl.useProgram()
+        gl.useProgram(program)
+
+        // TODO: connect up vertex position buffer to shader attribute
+        // 1. Bind Buffer again (buffer is still bound from before,
+        // however later there will be more buffers, so we better do this)
+        // functions to use:    gl.bindBuffer()
+        gl.bindBuffer(gl.ARRAY_BUFFER, position_buffer);
+
+        // 2. get Attribute location (of a_position) in the Vertex Shader
+        // functions to use:    gl.getAttribLocation()
+        let attribLocation = gl.getAttribLocation(program, "a_position");
+        // 3. enable vertex attribute location (by default everything is disabled to increase performance)
+        // functions to use:    gl.enableVertexAttribArray()
+        gl.enableVertexAttribArray(attribLocation);
+        let vertexSize = 2;
+        // 4. define the connection of the data in the buffer and the vertex position attribute a_position.
+        // functions to use:    gl.vertexAttribPointer()
+        gl.vertexAttribPointer(attribLocation, vertexSize, gl.FLOAT, false, 0, 0);
+        // -----------------------------------------
+        // Draw with current active shader
+        // -----------------------------------------
+        // TODO: execute Draw Call
+        // functions to use:    gl.drawArrays()
+        let vertexCount = positionArray.length/2;
+        gl.drawArrays(gl.TRIANGLES, 0, vertexCount);
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+    <script>
+        'use strict';
+        class Rectangle {
+            constructor (height, width) {
+                this.height = height;
+                this.width = width;
+            }
+            draw() {
+                let rect = '+'.repeat(this.width) + '\n';
+                for (let i = 0; i < this.height - 2; i++) {
+                    rect += '+' + '-'.repeat(this.width - 2) + '+\n';
+                }
+                rect += '+'.repeat(this.width) + '\n';
+                console.log(rect);
+            }
+        }
+        let myRect = new Rectangle(12, 20);
+        myRect.draw();
+    </script>
+</html>

@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Hello WebGL</title>
+    <script type="vertex-shader" id="vertexShader">
+        attribute vec2 a_position;
+
+        void main() {
+        	gl_Position = vec4(a_position, 0, 1);
+        }
+    </script>
+    <script type="fragment-shader" id="fragmentShader">
+        precision highp float; //float precision settings
+
+        void main()
+        {
+            gl_FragColor = vec4(1,0,0,1); // rbga
+        }
+    </script>
+</head>
+<body>
+	<canvas width="500" height="500" id="webgl-canvas"></canvas>
+    <script src="webgl-debug.js"></script>
+    <script src="webgl-lint.js"></script>
+    <script type="text/javascript">
+        "use strict"; // use strict javascript compiling
+
+        // -----------------------------------------
+        // Global variables
+        // -----------------------------------------
+        var gl;
+        var canvas;
+        var shaderProgram;
+        var positionBuffer;
+        var vertexCount;
+
+        // -----------------------------------------
+        // Functions
+        // -----------------------------------------
+        function setup(){
+            canvas = document.getElementById("webgl-canvas");
+            gl = canvas.getContext("webgl"); // WebGLRenderingContext
+            // post error if not supported
+            if(!gl){ console.error("WebGL context is not available."); }
+
+            gl = WebGLDebugUtils.makeDebugContext(gl); // enable debugging
+
+            gl.clearColor(0.85, 0.95, 0.9, 1); // set clear color (RGBA)
+            gl.clear(gl.COLOR_BUFFER_BIT); // clear color buffers
+        }
+
+        /**
+        * Looks in the html file for the script element with the given element ID.
+        * @param {string} elementID ID of the script with the source text (code) of the shader.
+        * @return {string} The text (code) contained in the element with elementID.
+        */
+        function getDomShaderSrc(elementID){
+            return document.getElementById(elementID).text;
+        }
+
+        /**
+        * Creates and returns a ShaderProgram from the given vertex and fragment shader sources.
+        * @param {string} vertexShaderScr the source text (code) of the vertex shader.
+        * @param {string} fragmentShaderSrc the source text (code) of the fragment shader.
+        * @return {WebGLShaderProgram} A Shaderprogram, initialized, linked and validated.
+        */
+        function createShaderProgram(vertexShaderSource, fragmentShaderSource){
+            let vertexShader = gl.createShader(gl.VERTEX_SHADER);
+            let fragmentShader = gl.createShader(gl.FRAGMENT_SHADER);
+            gl.shaderSource(vertexShader, vertexShaderSource);
+            gl.shaderSource(fragmentShader, fragmentShaderSource);
+            gl.compileShader(vertexShader);
+            gl.compileShader(fragmentShader);
+            let program = gl.createProgram();
+            gl.attachShader(program, vertexShader);
+            gl.attachShader(program, fragmentShader);
+            gl.linkProgram(program);
+            let linkSuccess = gl.getProgramParameter(program, gl.LINK_STATUS);
+            console.log(gl.getProgramInfoLog(program));
+            return program;
+        }
+
+        /**
+        * takes any array, creates a Float32Array from it, moves the data into a buffer
+        * and then returns that buffer.
+        * @param {Array} array Javascript array with the attribute data for the buffer.
+        * @return {WebGLBufferObject} a new buffer that now contains the data from array.
+        */
+        function createArrayBuffer(array){
+            let buffer = gl.createBuffer();
+            let positionArray = new Float32Array(array);
+            gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+            gl.bufferData(gl.ARRAY_BUFFER, positionArray, gl.STATIC_DRAW);
+            return buffer;
+        }
+
+        // initializes buffers and shader
+        function init() {
+            let vertexShaderSource = getDomShaderSrc("vertexShader");
+            let fragmentShaderSource = getDomShaderSrc("fragmentShader");
+            shaderProgram = createShaderProgram(vertexShaderSource, fragmentShaderSource);
+            // create buffer
+            positionBuffer = createArrayBuffer([
+                -0.5, -0.5, // first point
+                -0.5, 0.5, // second point
+                0.5, 0.5, // third point
+                -0.5, 0.5, // second point
+                0.5, 0.5,
+                0.5, -0.5
+            ]);
+            vertexCount = 3;
+            gl.useProgram(shaderProgram);
+        }
+
+        // sets vertex attribues, enables shader and executes the draw call
+        // TODO: complete this function
+        function draw(pointsToDraw){
+            // TODO: complete this function
+            let attribLocation = gl.getAttribLocation(shaderProgram, "a_position");
+            gl.enableVertexAttribArray(attribLocation);
+            let vertexSize = 2;
+            gl.vertexAttribPointer(attribLocation, vertexSize, gl.FLOAT, false, 0, 0);
+            gl.drawArrays(gl.TRIANGLES, 0, pointsToDraw);
+        }
+
+        // -----------------------------------------
+        // Execution
+        // -----------------------------------------
+        setup();
+        init();
+        draw(6);
+    </script>
+</body>
+</html>

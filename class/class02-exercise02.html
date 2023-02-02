@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <title>Class 02 Mini Exercise 01</title>
+    </head>
+    <body>
+        <script type="text/javascript">
+
+        // Here we have 2 dogs, Ralph and Mozart, but both of them
+        // are printed out as Mozart, and they don't make a sound?
+        // What is the problem here?
+
+        class Dog {
+            constructor(name, sound){
+                this.name = name;
+                this.sound = sound;
+            }
+
+            speak() {
+                console.log("My name is " + this.name + "! \n" +
+                            "and I go: " + this.sound); // The "\n" is a new line character
+            }
+        }
+
+        var sound = "Wuff, Wuff!";
+        var name = "Ralph";
+        var ralph = new Dog(name, sound);
+
+        name = "Mozart";
+        var mozart = new Dog(name, sound);
+
+        // make the dogs speak
+        ralph.speak();
+        mozart.speak();
+
+        </script>
+    </body>
+</html>

@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+    <script>
+        'use strict';
+        class RPG {
+            constructor (height, width) {
+                this.height = height;
+                this.width = width;
+                this.player = {x: 0, y: 0};
+            }
+            draw() {
+                let board = '';
+                for (let i = 0; i < this.height; i++) {
+                    board += '.'.repeat(this.width) + '\n';
+                }
+                let firstPart = board.substring(0, this.player.y * (this.width + 1) + this.player.x);
+                let secondPart = board.substring(this.player.y * (this.width + 1) + this.player.x + 1);
+                console.log(firstPart + 'O' + secondPart);
+            }
+        }
+        // We would LIKE to have this function be a method of the RPG object, but we run into scoping problems
+        // when we add it to an event listener ("this" doesn't work as intended from inside the listener).
+        function handleKeydown(game, event) {
+                console.log(this);
+                switch (event.key) {
+                    case 'ArrowRight':
+                        game.player.x = (game.player.x + 1) % game.width;
+                        break;
+                    case 'ArrowLeft':
+                        game.player.x = (game.player.x - 1) % game.width;
+                        break;
+                    case 'ArrowDown': 
+                        game.player.y = (game.player.y + 1) % game.height;
+                        break;
+                    case 'ArrowUp':
+                        game.player.y = (game.player.y - 1) % game.height;
+                        break;
+                    default: 
+                        break;
+                }
+                // correct javascript's weird mod bug for negative numbers:
+                game.player = {
+                    x: ((game.player.x % game.width) + game.width) % game.width,
+                    y: ((game.player.y % game.height) + game.height) % game.height
+                }
+                game.draw();
+            }
+        let myGame = new RPG(40, 50);
+        myGame.draw()
+        window.addEventListener('keydown', e => {handleKeydown(myGame, e)})
+    </script>
+</html>
