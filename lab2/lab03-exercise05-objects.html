@@ -116,19 +116,58 @@
             gl.vertexAttribPointer(attribLocation, vertexSize, gl.FLOAT, false, 0, 0);
             gl.drawArrays(drawMethod, 0, numPoints);
         }
+
+        function initCircle(numEdges, radius, centerX, centerY) {
+            // add center point
+            let pts = [centerX, centerY];
+            // add points around the edge
+            for (let i = 0; i <= numEdges; i++) {
+                let angle = 2 * Math.PI * i / numEdges;
+                pts.push((Math.cos(angle) * radius) + centerX);
+                pts.push((Math.sin(angle) * radius) + centerY);
+            }
+            init(pts);
+        }
+
+        // Draw Mickey Mouse with the following parameters:
+        // numEdgesPerCircle: The number of edges each of the three circles (left ear, right ear, head) should have
+        // headRadius: How big the head should be in clip space
+        // headX: the x coordinate of Mickey's head in clip space
+        // headY: the y coordinate of Mickey's head in clip space
+        // earToHeadRatio: ear radius / head radius
+        // earAngle: half of the angle between the ears from the top of the head
+        // earHeadOcclusion: A coefficient describing the distance between the center of the ears and the center of the head
+        //                  an earHeadOcclsion of zero indicates that the ears and head should not overlap, whereas an earHeadocclusion
+        //                  of one would signify total overlap.
+        function drawMickey(numEdgesPerCircle, headRadius, headX, headY, earToHeadRatio, earAngle, earHeadOcclusion) {
+            // draw head
+            initCircle(numEdgesPerCircle, headRadius, headX, headY);
+            draw(numEdgesPerCircle + 2, gl.TRIANGLE_FAN);
+            // draw left ear
+            let distToEar = headRadius * (1 + earToHeadRatio);
+            let earRadius = headRadius * earToHeadRatio;
+            let occlusionFactor = 1 - earHeadOcclusion;
+            initCircle(
+                numEdgesPerCircle, 
+                earRadius, 
+                headX - (distToEar * occlusionFactor * Math.sin(earAngle)), 
+                headY + (distToEar * occlusionFactor *  Math.cos(earAngle)));
+            draw(numEdgesPerCircle + 2, gl.TRIANGLE_FAN);
+            // draw right ear
+            initCircle(
+                numEdgesPerCircle, 
+                earRadius, 
+                headX + (distToEar * occlusionFactor * Math.sin(earAngle)), 
+                headY + (distToEar * occlusionFactor * Math.cos(earAngle)));
+                       
+            draw(numEdgesPerCircle + 2, gl.TRIANGLE_FAN);
+        }
+
         // -----------------------------------------
         // Execution
         // -----------------------------------------
         setup();
-        init([
-                -0.5, -0.5, 
-                -0.5, 0.5, 
-                0.5, 0.5, 
-                -0.5, -0.5, 
-                0.5, -0.5,
-                0.5, 0.5
-            ]);
-        draw(6, gl.TRIANGLES);
+        drawMickey(100, 0.3, 0.3, 0.3, 0.5, Math.PI/4, 0.13)
     </script>
 </body>
 </html>

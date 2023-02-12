@@ -116,19 +116,30 @@
             gl.vertexAttribPointer(attribLocation, vertexSize, gl.FLOAT, false, 0, 0);
             gl.drawArrays(drawMethod, 0, numPoints);
         }
+
+        function initCircle(numEdges, radius, centerX, centerY) {
+            // add center point
+            let pts = [centerX, centerY];
+            // add points around the edge
+            for (let i = 0; i <= numEdges; i++) {
+                let angle = 2 * Math.PI * i / numEdges;
+                pts.push((Math.cos(angle) * radius) + centerX);
+                pts.push((Math.sin(angle) * radius) + centerY);
+            }
+            init(pts);
+        }
+
         // -----------------------------------------
         // Execution
         // -----------------------------------------
         setup();
-        init([
-                -0.5, -0.5, 
-                -0.5, 0.5, 
-                0.5, 0.5, 
-                -0.5, -0.5, 
-                0.5, -0.5,
-                0.5, 0.5
-            ]);
-        draw(6, gl.TRIANGLES);
+        let numEdges = 100
+        initCircle(numEdges, 0.5, 0, 0);
+        // the two extra points that we have to draw are:
+        // a.) the center point
+        // b.) the first triangle that we draw can't share a point with the last triangle. We have to
+        //     define that vertex twice.
+        draw(numEdges + 2, gl.TRIANGLE_FAN);
     </script>
 </body>
 </html>
