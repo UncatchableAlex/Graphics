@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Hello WebGL</title>
+    <script type="vertex-shader" id="tintcolor-vertexShader">
+        attribute vec2 a_position;
+        // TODO: Add u_offset uniform
+        void main() {
+            // TODO: apply offset to final vertex position
+        	gl_Position = vec4(a_position, 0, 1);
+        }
+    </script>
+    <script type="fragment-shader" id="tintcolor-fragmentShader">
+        precision highp float; //float precision settings
+        // TODO: Add u_tint uniform
+        void main()
+        {
+            // TODO: use u_tint uniform for final fragment color
+            gl_FragColor = vec4(1,0,0,1); // rbga -> [1,0,0,1] = red
+        }
+    </script>
+</head>
+<body>
+	<canvas width="500" height="500" id="webgl-canvas"></canvas>
+
+    <script src="../common/webgl-debug.js"></script> <!--This adds the webgl debug library-->
+    <script src="../common/webgl-lint.js"></script> <!--This adds the webgl lint library-->
+    <script src="../common/gl-utils.js"></script>
+    <script src="quad.js"></script>
+
+    <script type="text/javascript">
+        "use strict"; // use strict javascript compiling
+
+        // -----------------------------------------
+        // Global variables
+        // -----------------------------------------
+        var gl;
+        var canvas;
+        var g_tintcolor_shaderProgram;
+        var g_quad1;
+        // TODO: Add more variables for other quads
+
+        function setup(){
+            canvas = document.getElementById("webgl-canvas");
+            gl = canvas.getContext("webgl2"); // WebGLRenderingContext
+            // post error if not supported
+            if(!gl){ console.error("WebGL context is not available."); }
+
+            gl = WebGLDebugUtils.makeDebugContext(gl); // enable debugging
+
+            gl.clearColor(0.85, 0.95, 0.9, 1); // set clear color (RGBA)
+            gl.clear(gl.COLOR_BUFFER_BIT); // clear color buffers
+        }
+
+        /**
+        * Initialize shader program and create geometry and buffers.
+        */
+        function init(){
+            let tintcolor_vertexShaderSource = GLUtils.getDomShaderSrc("tintcolor-vertexShader");
+            let tintcolor_fragmentShaderSource = GLUtils.getDomShaderSrc("tintcolor-fragmentShader");
+            g_tintcolor_shaderProgram = GLUtils.createShaderProgram(tintcolor_vertexShaderSource,
+                                    tintcolor_fragmentShaderSource);
+
+            // TODO: Add other tint colors and create other quad objects.
+            let tint1 = [1.0, 1.0, 0.0]; // yellow
+            g_quad1 = new Quad(0.0, -0.5, 0.5, tint1);
+        }
+
+        /**
+        * Call all draw functions.
+        */
+        function draw(){
+            // TODO: Draw other quad objects.
+            drawQuad(g_tintcolor_shaderProgram, g_quad1);
+        }
+
+        function drawQuad(shaderProgram, quad){
+            // TODO: set currently active shader program (use shaderProgram)
+
+            // TODO: Connect position buffer to a_position attribute in vertex shader
+            // 1. Bind position buffer
+            // 2. Get position attribute location
+            // 3. Enable position vertex attribute array
+            // 4. Set position vertex attribute pointer
+
+            // TODO: get u_offset uniform location
+            // TODO: Set u_offset uniform
+
+            // TODO: get u_scale uniform location
+            // TODO: Set u_scale uniform
+
+            // TODO: get u_tint uniform location
+            // TODO: Set u_tint uniform
+
+            // TODO: change Draw Call to use gl.drawElements instead to use Element Array Buffer
+            // draw geometry
+            gl.drawArrays(gl.TRIANGLES, 0, quad.vertexCount);
+        }
+
+        // actually execute the functions to run the program
+        setup();
+        init();
+        draw();
+    </script>
+</body>
+</html>

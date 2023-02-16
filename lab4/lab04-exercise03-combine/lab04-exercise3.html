@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Hello WebGL</title>
+    <!-- TODO: Place both quad and triangle vertex and fragement shaders here -->
+
+</head>
+<body>
+	<canvas width="500" height="500" id="webgl-canvas"></canvas>
+
+    <script src="../common/webgl-debug.js"></script> <!--This adds the webgl debug library-->
+    <script src="../common/webgl-lint.js"></script> <!--This adds the webgl lint library-->
+    <script src="../common/gl-utils.js"></script>
+    <!-- TODO: import quad.js and triangle.js here -->
+
+    <script type="text/javascript">
+        "use strict"; // use strict javascript compiling
+
+        // -----------------------------------------
+        // Global variables
+        // -----------------------------------------
+        var gl;
+        var canvas;
+        // TODO: Add global variables for triangle and quad shader programs
+        // TODO: Add global variables for objects you want to draw
+
+        function setup(){
+            canvas = document.getElementById("webgl-canvas");
+            gl = canvas.getContext("webgl2"); // WebGLRenderingContext
+            // post error if not supported
+            if(!gl){ console.error("WebGL context is not available."); }
+
+            gl = WebGLDebugUtils.makeDebugContext(gl); // enable debugging
+
+            gl.clearColor(0.85, 0.95, 0.9, 1); // set clear color (RGBA)
+            gl.clear(gl.COLOR_BUFFER_BIT); // clear color buffers
+        }
+
+        /**
+        * Initialize shader program and create geometry and buffers.
+        */
+        function init(){
+            // TODO: create triangle and quad shader programs using functions in
+            // gl-utils.js
+        }
+
+        /**
+        * Call all draw functions.
+        */
+        function draw(){
+            // TODO: call draw functions for all your objects
+        }
+
+        // TODO: copy drawTriangle() and drawQuad() functions here
+
+        // actually execute the functions to run the program
+        setup();
+        init();
+        draw();
+    </script>
+</body>
+</html>
