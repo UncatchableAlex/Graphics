@@ -5,19 +5,23 @@
     <title>Hello WebGL</title>
     <script type="vertex-shader" id="tintcolor-vertexShader">
         attribute vec2 a_position;
-        // TODO: Add u_offset uniform
+        // Add u_offset uniform
+        uniform vec2 u_offset;
+        uniform float u_scale;
         void main() {
-            // TODO: apply offset to final vertex position
-        	gl_Position = vec4(a_position, 0, 1);
+            // apply offset to final vertex position
+            vec2 finalposition = (a_position * u_scale) + u_offset;
+        	gl_Position = vec4(finalposition, 0, 1);
         }
     </script>
     <script type="fragment-shader" id="tintcolor-fragmentShader">
         precision highp float; //float precision settings
-        // TODO: Add u_tint uniform
+        // Add u_tint uniform
+        uniform vec3 u_tint;
         void main()
         {
-            // TODO: use u_tint uniform for final fragment color
-            gl_FragColor = vec4(1,0,0,1); // rbga -> [1,0,0,1] = red
+            // use u_tint uniform for final fragment color
+            gl_FragColor = vec4(u_tint, 1); // rbga -> [1,0,0,1] = red
         }
     </script>
 </head>
@@ -39,7 +43,8 @@
         var canvas;
         var g_tintcolor_shaderProgram;
         var g_quad1;
-        // TODO: Add more variables for other quads
+        var g_quad2;
+        var g_quad3;
 
         function setup(){
             canvas = document.getElementById("webgl-canvas");
@@ -62,40 +67,54 @@
             g_tintcolor_shaderProgram = GLUtils.createShaderProgram(tintcolor_vertexShaderSource,
                                     tintcolor_fragmentShaderSource);
 
-            // TODO: Add other tint colors and create other quad objects.
             let tint1 = [1.0, 1.0, 0.0]; // yellow
+            let tint2 = [57/256, 247/256, 241/256];
+            let tint3 = [241/256, 57/256, 247/256];
             g_quad1 = new Quad(0.0, -0.5, 0.5, tint1);
+            g_quad2 = new Quad(-0.5, 0.5, 2, tint2);
+            g_quad3 = new Quad(0.5, 0.5, 1, tint3);
         }
 
         /**
         * Call all draw functions.
         */
         function draw(){
-            // TODO: Draw other quad objects.
             drawQuad(g_tintcolor_shaderProgram, g_quad1);
+            drawQuad(g_tintcolor_shaderProgram, g_quad2);
+            drawQuad(g_tintcolor_shaderProgram, g_quad3);
         }
 
         function drawQuad(shaderProgram, quad){
             // TODO: set currently active shader program (use shaderProgram)
-
-            // TODO: Connect position buffer to a_position attribute in vertex shader
-            // 1. Bind position buffer
-            // 2. Get position attribute location
-            // 3. Enable position vertex attribute array
+            gl.useProgram(shaderProgram);
+            // Connect position buffer to a_position attribute in vertex shader
+            // Bind position buffer
+            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, quad.indexBuffer);
+            // Get position attribute location
+            let positionAttributeLocation = gl.getAttribLocation(shaderProgram, "a_position");
+            // Enable position vertex attribute array
+            gl.enableVertexAttribArray(positionAttributeLocation)
             // 4. Set position vertex attribute pointer
-
-            // TODO: get u_offset uniform location
-            // TODO: Set u_offset uniform
-
-            // TODO: get u_scale uniform location
-            // TODO: Set u_scale uniform
-
-            // TODO: get u_tint uniform location
-            // TODO: Set u_tint uniform
-
-            // TODO: change Draw Call to use gl.drawElements instead to use Element Array Buffer
+            let size = 2;
+            let type = gl.FLOAT;
+            let normalize = false;
+            let stride = 0;
+            let offset = 0;
+            gl.vertexAttribPointer(positionAttributeLocation, size, type, normalize, stride, offset);
+            // get u_offset uniform location
+            let offsetUniformLocation = gl.getUniformLocation(shaderProgram, "u_offset");
+            // TSet u_offset uniform
+            gl.uniform2f(offsetUniformLocation, quad.offsetX, quad.offsetY);
+            // get u_scale uniform location
+            let scaleUniformLocation = gl.getUniformLocation(shaderProgram, "u_scale");
+            // Set u_scale uniform
+            gl.uniform1f(scaleUniformLocation, quad.scale);
+            // get u_tint uniform location
+            let tintUniformLocation = gl.getUniformLocation(shaderProgram, "u_tint");
+            // Set u_tint uniform
+            gl.uniform3fv(tintUniformLocation, quad.tint);
             // draw geometry
-            gl.drawArrays(gl.TRIANGLES, 0, quad.vertexCount);
+            gl.drawElements(gl.TRIANGLES, quad.vertexCount, gl.UNSIGNED_SHORT, 0);
         }
 
         // actually execute the functions to run the program

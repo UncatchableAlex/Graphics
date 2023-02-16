@@ -3,8 +3,51 @@
 <head>
     <meta charset="UTF-8" />
     <title>Hello WebGL</title>
-    <!-- TODO: Place both quad and triangle vertex and fragement shaders here -->
+    <script type="vertex-shader" id="vertexcolor-vertexShader">
+        attribute vec2 a_position;
+        attribute vec3 a_color;
+        varying vec3 v_color;
+        uniform vec2 u_offset;
 
+        void main() {
+            // TODO: set color varying
+            v_color = a_color;
+            // TODO: apply offset to final vertex position
+        	gl_Position = vec4(a_position + u_offset, 0, 1);
+        }
+    </script>
+    <script type="fragment-shader" id="vertexcolor-fragmentShader">
+        precision highp float; //float precision settings
+
+        // TODO: Add color varying
+        varying vec3 v_color;
+        void main()
+        {
+            // TODO: use color varying for final fragment color
+            gl_FragColor = vec4(v_color, 1); // rbga -> [1,0,0,1] = red
+        }
+    </script>
+    <script type="vertex-shader" id="tintcolor-vertexShader">
+        attribute vec2 a_position;
+        // Add u_offset uniform
+        uniform vec2 u_offset;
+        uniform float u_scale;
+        void main() {
+            // apply offset to final vertex position
+            vec2 finalposition = (a_position * u_scale) + u_offset;
+        	gl_Position = vec4(finalposition, 0, 1);
+        }
+    </script>
+    <script type="fragment-shader" id="tintcolor-fragmentShader">
+        precision highp float; //float precision settings
+        // Add u_tint uniform
+        uniform vec3 u_tint;
+        void main()
+        {
+            // use u_tint uniform for final fragment color
+            gl_FragColor = vec4(u_tint, 1); // rbga -> [1,0,0,1] = red
+        }
+    </script>
 </head>
 <body>
 	<canvas width="500" height="500" id="webgl-canvas"></canvas>
@@ -12,8 +55,9 @@
     <script src="../common/webgl-debug.js"></script> <!--This adds the webgl debug library-->
     <script src="../common/webgl-lint.js"></script> <!--This adds the webgl lint library-->
     <script src="../common/gl-utils.js"></script>
-    <!-- TODO: import quad.js and triangle.js here -->
-
+    <script src="triangle.js"></script>
+    <script src="quad.js"></script>
+    <script src="circle.js"></script>
     <script type="text/javascript">
         "use strict"; // use strict javascript compiling
 
@@ -22,8 +66,17 @@
         // -----------------------------------------
         var gl;
         var canvas;
-        // TODO: Add global variables for triangle and quad shader programs
-        // TODO: Add global variables for objects you want to draw
+        // global variables for triangle and quad shader programs
+        var g_vertexcolor_shaderProgram;
+        var g_tintcolor_shaderProgram;
+
+        // Add global variables for objects you want to draw
+        var g_quad1;
+        var g_quad2;
+        var g_quad3;
+        var g_triangle1;
+        var g_triangle2;
+        var g_circle1;
 
         function setup(){
             canvas = document.getElementById("webgl-canvas");
@@ -41,15 +94,132 @@
         * Initialize shader program and create geometry and buffers.
         */
         function init(){
-            // TODO: create triangle and quad shader programs using functions in
-            // gl-utils.js
+            let tintcolor_vertexShaderSource = GLUtils.getDomShaderSrc("tintcolor-vertexShader");
+            let tintcolor_fragmentShaderSource = GLUtils.getDomShaderSrc("tintcolor-fragmentShader");
+            g_tintcolor_shaderProgram = GLUtils.createShaderProgram(tintcolor_vertexShaderSource,
+                                    tintcolor_fragmentShaderSource);
+
+            let vertexcolor_vertexShaderSource = GLUtils.getDomShaderSrc("vertexcolor-vertexShader");
+            let vertexcolor_fragmentShaderSource = GLUtils.getDomShaderSrc("vertexcolor-fragmentShader");
+            g_vertexcolor_shaderProgram = GLUtils.createShaderProgram(vertexcolor_vertexShaderSource,
+                                        vertexcolor_fragmentShaderSource);
+
+            let tint1 = [1.0, 1.0, 0.0]; // yellow
+            let tint2 = [57/256, 247/256, 241/256];
+            let tint3 = [241/256, 57/256, 247/256];
+            let tint4 = [0, 0, 0];
+            let grad1 = new Float32Array([ // rainbow
+                0, 0, 1,
+                1, 0, 0,
+                0, 1, 0
+            ]);
+            g_triangle1 = new Triangle(-0.5, 0.25);
+            g_triangle2 = new Triangle(0.5, -0.25);
+            g_circle1 = new Circle(-0.5, -0.5, 0.5, 100, tint1);
+            g_quad1 = new Quad(0.0, -0.5, 0.5, tint1);
+            g_quad2 = new Quad(-0.5, 0.5, 2, tint2);
+            g_quad3 = new Quad(0.5, 0.5, 1, tint3);
         }
 
+        function drawCircle(shaderProgram, circle) {
+            // set currently active shader program (use shaderProgram)
+            gl.useProgram(shaderProgram)
+            // Connect position buffer to a_position attribute in vertex shader
+            // Bind position buffer
+            gl.bindBuffer(gl.ARRAY_BUFFER, circle.positionBuffer);
+            // Get position attribute location
+            let positionAttributeLocation = gl.getAttribLocation(shaderProgram, "a_position");
+            // Enable position vertex attribute array
+            gl.enableVertexAttribArray(positionAttributeLocation);
+            // Set position vertex attribute pointer
+            let size = 2;
+            let type = gl.FLOAT;
+            let normalize = false;
+            let stride = 0;
+            let offset = 0;
+            gl.vertexAttribPointer(positionAttributeLocation, size, type, normalize, stride, offset);
+            let tintUniformLocation = gl.getUniformLocation(shaderProgram, "u_tint");
+            // Set u_tint uniform
+            gl.uniform3fv(tintUniformLocation, circle.tint);
+            // draw geometry
+            gl.drawArrays(gl.TRIANGLE_FAN, 0, circle.vertexCount);
+        }
+
+
+        function drawQuad(shaderProgram, quad) {
+            // set currently active shader program (use shaderProgram)
+            gl.useProgram(shaderProgram);
+            // Connect position buffer to a_position attribute in vertex shader
+            // Bind position buffer
+            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, quad.indexBuffer);
+            // Get position attribute location
+            let positionAttributeLocation = gl.getAttribLocation(shaderProgram, "a_position");
+            // Enable position vertex attribute array
+            gl.enableVertexAttribArray(positionAttributeLocation)
+            // 4. Set position vertex attribute pointer
+            let size = 2;
+            let type = gl.FLOAT;
+            let normalize = false;
+            let stride = 0;
+            let offset = 0;
+            gl.vertexAttribPointer(positionAttributeLocation, size, type, normalize, stride, offset);
+            // get u_offset uniform location
+            let offsetUniformLocation = gl.getUniformLocation(shaderProgram, "u_offset");
+            // TSet u_offset uniform
+            gl.uniform2f(offsetUniformLocation, quad.offsetX, quad.offsetY);
+            // get u_scale uniform location
+            let scaleUniformLocation = gl.getUniformLocation(shaderProgram, "u_scale");
+            // Set u_scale uniform
+            gl.uniform1f(scaleUniformLocation, quad.scale);
+            // get u_tint uniform location
+            let tintUniformLocation = gl.getUniformLocation(shaderProgram, "u_tint");
+            // Set u_tint uniform
+            gl.uniform3fv(tintUniformLocation, quad.tint);
+            // draw geometry
+            gl.drawElements(gl.TRIANGLES, quad.vertexCount, gl.UNSIGNED_SHORT, 0);
+        }
+
+
+         function drawTriangle(shaderProgram, triangle){
+            // set currently active shader program (use shaderProgram)
+            gl.useProgram(shaderProgram)
+            // Connect position buffer to a_position attribute in vertex shader
+            // Bind position buffer
+            gl.bindBuffer(gl.ARRAY_BUFFER, triangle.positionBuffer);
+            // Get position attribute location
+            let positionAttributeLocation = gl.getAttribLocation(shaderProgram, "a_position");
+            // Enable position vertex attribute array
+            gl.enableVertexAttribArray(positionAttributeLocation);
+            // Set position vertex attribute pointer
+            let size = 2;
+            let type = gl.FLOAT;
+            let normalize = false;
+            let stride = 0;
+            let offset = 0;
+            gl.vertexAttribPointer(positionAttributeLocation, size, type, normalize, stride, offset);
+            // Repeat for color buffer and a_color attribute in vertex shader
+            gl.bindBuffer(gl.ARRAY_BUFFER, triangle.colorBuffer);
+            let colorAttributeLocation = gl.getAttribLocation(shaderProgram, "a_color");
+            gl.enableVertexAttribArray(colorAttributeLocation);
+            size = 3;
+            gl.vertexAttribPointer(colorAttributeLocation, size, type, normalize, stride, offset);
+            // get u_offset uniform location
+            let offsetLocation = gl.getUniformLocation(shaderProgram, "u_offset");
+            //  Set u_offset uniform
+            gl.uniform2f(offsetLocation, triangle.offsetX, triangle.offsetY);
+            // draw geometry
+            gl.drawArrays(gl.TRIANGLES, 0, triangle.vertexCount);
+        }
         /**
         * Call all draw functions.
         */
         function draw(){
-            // TODO: call draw functions for all your objects
+            drawQuad(g_tintcolor_shaderProgram, g_quad1);
+            drawQuad(g_tintcolor_shaderProgram, g_quad2);
+            drawQuad(g_tintcolor_shaderProgram, g_quad3);  
+            drawCircle(g_tintcolor_shaderProgram, g_circle1); 
+            drawTriangle(g_vertexcolor_shaderProgram, g_triangle1);
+            drawTriangle(g_vertexcolor_shaderProgram, g_triangle2);
         }
 
         // TODO: copy drawTriangle() and drawQuad() functions here
