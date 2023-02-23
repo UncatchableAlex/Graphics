@@ -420,7 +420,9 @@ class M3 extends Array{
     * @return {M3} this matrix to chain up commands.
     */
 	reset(){
-        this = 
+        for (let i = 0; i < 9; i++) {
+            this[i] = M3.IDENTITY[i];
+        }
 		return this;
 	}
 
@@ -484,7 +486,11 @@ class M3 extends Array{
     */
     static rotationMatrix(angle){
         let result = M3.IDENTITY;
-        // TODO: Complete this method
+        let rad =  (angle / 180)  * Math.PI;
+        result[0] = Math.cos(rad);
+        result[1] = Math.sin(rad);
+        result[3] = -Math.sin(rad);
+        result[4] = Math.cos(rad);
         return result;
     }
 
@@ -495,19 +501,26 @@ class M3 extends Array{
     */
     static scaleMatrix(x, y){
         let result = M3.IDENTITY;
-        // TODO: Complete this method
+        result[0] = x;
+        result[4] = y;
         return result;
     }
 
     /** Multiplies two 3x3 matrices a and b (a * b). A new M3
-    * is created for the resulting produc matrix.
+    * is created for the resulting product matrix.
     * @param {M3} a the matrix to use as multiplicand.
     * @param {M3} b the matrix to use as multiplier.
     * @return {M3} a new Matrix object with the resulting product matrix.
     */
     static multM3(a, b){
         let result = M3.IDENTITY;
-        // TODO: Complete this method
+        for (let i = 0; i < 3; i++) {
+            for (let j = 0; j < 9; j += 3) {
+                let row = new V3(a[i], a[i + 3], a[i + 6]);
+                let col = new V3(b[j], b[j + 1], b[j + 2]);
+                result[i + j] = row.dot(col);
+            }
+        }
         return result;
     }
 
@@ -519,7 +532,10 @@ class M3 extends Array{
     */
     static multV3(m, v){
         let result = new V3();
-        // TODO: Complete this method
+        for (let i = 0; i < 3; i++) {
+            let row = new V3(m[i], m[i + 3], m[i + 6]);
+            result[i] = v.dot(row);
+        }
         return result;
     }
 
@@ -534,9 +550,9 @@ class M3 extends Array{
     static multV2(m, v){
         // We can execute a multiplication between a 3x3 matrix and a 2d vector, by
         // assuming that the z component of the vector is 1.
-        let result = new V2();
-        // TODO: Complete this method
-        return result;
+        let v3 = new V3(v[0], v[1], 1)
+        let mult_result = M3.multV3(m, v3);
+        return new V2(mult_result[0], mult_result[1]);
     }
 
     /** Inverts the given matrix m.
@@ -555,7 +571,11 @@ class M3 extends Array{
     */
     static transpose(m){
         let result = new M3();
-        // TODO: Complete this method
+        for (let i = 0; i < 3; i++) { // iterate row
+            for (let j = 0; j < 9; j += 3) { // iterate col
+                result[i + j] = m[i*3 + (j / 3)]
+            }
+        }     
         return result;
     }
 
