@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Lab 05 - Exercise 02</title>
+    <script type="vertex-shader" id="vertexShader">
+        attribute vec2 a_position;
+        // TODO: Add model matrix uniform
+        void main() {
+            // TODO: use model matrix to calculate final position on the screen
+            vec3 pos = vec3(a_position, 1);
+        	gl_Position = vec4(pos, 1);
+        }
+    </script>
+    <script type="fragment-shader" id="fragmentShader">
+        precision highp float; //float precision settings
+        uniform vec3 u_tint;
+        void main()
+        {
+            gl_FragColor = vec4(u_tint,1); // rbga
+        }
+    </script>
+</head>
+<body>
+	<canvas width="800" height="800" id="webgl-canvas"></canvas>
+    <script src="../common/webgl-debug.js"></script>
+    <script src="../common/gl-utils.js"></script>
+    <script src="../common/webgl-lint.js"></script>
+    <script src="../common/math2d.js"></script>
+    <script src="modeltransform.js"></script>
+    <script type="text/javascript">
+        "use strict"; // use strict javascript compiling
+
+        // -----------------------------------------
+        // Global variables
+        // -----------------------------------------
+        var gl;
+        var canvas;
+        var g_shaderProgram;
+
+        // our models
+        var leonardo;
+        var donatello;
+        var michelangelo;
+        var raphael;
+
+        function setup(){
+            canvas = document.getElementById("webgl-canvas");
+            gl = canvas.getContext("webgl"); // WebGLRenderingContext (WebGL!)
+            // post error if not supported
+            if(!gl){ console.error("WebGL context is not available."); }
+
+            gl = WebGLDebugUtils.makeDebugContext(gl); // enable debugging
+
+            gl.clearColor(0.85, 0.95, 0.9, 1); // set clear color (RGBA)
+            gl.clear(gl.COLOR_BUFFER_BIT); // clear color buffers
+        }
+
+        function init(){
+            let vertexShaderScr = GLUtils.getDomShaderSrc("vertexShader");
+            let fragmentShaderSrc = GLUtils.getDomShaderSrc("fragmentShader");
+            g_shaderProgram = GLUtils.createShaderProgram(vertexShaderScr, fragmentShaderSrc);
+
+            let leonardoPosition = new V2(-0.4,0.4); // position is in the upper left corner
+            let leonardoRotation = -25; // -25 degree angle
+            let leonardoScale = new V2(0.7,0.8); // slightly scaled down and more narrow (70% width, 80% height)
+            let leonardoTint = new V3(0.67,0.84,0.90); // light blue
+            leonardo = new ModelTransform(leonardoPosition, leonardoRotation, leonardoScale, leonardoTint);
+        }
+
+        function draw(){
+            gl.clear(gl.COLOR_BUFFER_BIT); // clear color buffers
+
+            leonardo.updateMatrix();
+            drawModel(g_shaderProgram, leonardo);
+        }
+
+        function drawModel(shaderProgram, model){
+            // set active shader
+            gl.useProgram(shaderProgram);
+
+            // get uniform location for color and set the value to model tint color
+            let colorLocation = gl.getUniformLocation(shaderProgram, "u_tint");
+            gl.uniform3fv(colorLocation, model.tint.toFloat32());
+
+            // bind position buffer and set attribute pointer
+            gl.bindBuffer(gl.ARRAY_BUFFER, model.positionBuffer);
+            let positionSize = 2;
+            let positionAttributeLocation = gl.getAttribLocation(shaderProgram, "a_position");
+            gl.enableVertexAttribArray(positionAttributeLocation);
+            gl.vertexAttribPointer(positionAttributeLocation, positionSize, gl.FLOAT, false, 0, 0);
+
+            // TODO: get uniform location for u_matrixM in the vertex shader and
+            // set it to the data of this models modelMatrix (see modeltransform.js);
+            // Remember: You should set the data as a Float32Array!
+            // (you can use the function toFLoat32() of an M3 object, see math2d.js)
+            // To set uniform data for a vector or single value you have to use gl.uniform[0-3]fi[v](...)
+            // To set uniform data for a matrix you have to use gl.uniformMatrix[3-4]fv(...)!
+
+            // use Element Array Buffer (Index Buffer)
+            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, model.indexBuffer);
+            // draw geometry
+            gl.drawElements(gl.TRIANGLES, model.vertexCount, gl.UNSIGNED_SHORT, 0);
+    	}
+
+        setup();
+        init();
+        draw();
+    </script>
+</body>
+</html>
