@@ -66,8 +66,11 @@ class ModelTransform{
     updateMatrix(){
         this.modelMatrix.reset(); // we reset the matrix first and then calculate the new matrix from position, rotation and scale.
 
-        // TODO: complete function
         //update the modelMatrix of this quad using its position, rotaton and scale
+        let tmat = M3.translationMatrix(this.position[0], this.position[1]);
+        let rmat = M3.rotationMatrix(this.rotation);
+        let smat = M3.scaleMatrix(this.scale[0], this.scale[1]);
+        this.modelMatrix = M3.multM3(tmat, M3.multM3(rmat, smat));
         //use the respective functions in your math library to achieve this.
 
         //Hints:

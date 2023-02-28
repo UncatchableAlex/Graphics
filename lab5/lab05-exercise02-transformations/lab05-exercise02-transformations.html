@@ -6,9 +6,10 @@
     <script type="vertex-shader" id="vertexShader">
         attribute vec2 a_position;
         // TODO: Add model matrix uniform
+        uniform mat3 u_matrixM;
         void main() {
-            // TODO: use model matrix to calculate final position on the screen
-            vec3 pos = vec3(a_position, 1);
+            // use model matrix to calculate final position on the screen
+            vec3 pos = u_matrixM * vec3(a_position, 1);
         	gl_Position = vec4(pos, 1);
         }
     </script>
@@ -66,6 +67,26 @@
             let leonardoScale = new V2(0.7,0.8); // slightly scaled down and more narrow (70% width, 80% height)
             let leonardoTint = new V3(0.67,0.84,0.90); // light blue
             leonardo = new ModelTransform(leonardoPosition, leonardoRotation, leonardoScale, leonardoTint);
+            
+            let michelangeloPosition = new V2(0.3,-0.1); 
+            let michelangeloRotation = -80; 
+            let michelangeloScale = new V2(.5,.7);
+            let michelangeloTint = new V3(0.9, 0.84,0.20); 
+            michelangelo = new ModelTransform(michelangeloPosition, michelangeloRotation, michelangeloScale, michelangeloTint);
+            
+            let donatelloPosition = new V2(-0.4,-0.4); 
+            let donatelloRotation = 25; 
+            let donatelloScale = new V2(.5,.3);
+            let donatelloTint = new V3(0.3,0.84,0.20); 
+            donatello = new ModelTransform(donatelloPosition, donatelloRotation, donatelloScale, donatelloTint);
+
+            let raphaelPosition = new V2(0.5,0.5); 
+            let raphaelRotation = 25; 
+            let raphaelScale = new V2(.5,.9);
+            let raphaelTint = new V3(0.3,0.84,0.90); 
+            raphael = new ModelTransform(raphaelPosition, raphaelRotation, raphaelScale, raphaelTint);
+
+
         }
 
         function draw(){
@@ -73,6 +94,18 @@
 
             leonardo.updateMatrix();
             drawModel(g_shaderProgram, leonardo);
+
+            donatello.updateMatrix();
+            drawModel(g_shaderProgram, donatello);
+
+            michelangelo.updateMatrix();
+            drawModel(g_shaderProgram, michelangelo);
+
+            
+            raphael.updateMatrix();
+            drawModel(g_shaderProgram, raphael);
+
+            window.requestAnimationFrame(draw);
         }
 
         function drawModel(shaderProgram, model){
@@ -90,8 +123,11 @@
             gl.enableVertexAttribArray(positionAttributeLocation);
             gl.vertexAttribPointer(positionAttributeLocation, positionSize, gl.FLOAT, false, 0, 0);
 
-            // TODO: get uniform location for u_matrixM in the vertex shader and
+            //  get uniform location for u_matrixM in the vertex shader and
             // set it to the data of this models modelMatrix (see modeltransform.js);
+            let worldMatrixLocation = gl.getUniformLocation(shaderProgram, "u_matrixM")
+            let modelMatrix = new Float32Array(model.modelMatrix);
+            gl.uniformMatrix3fv(worldMatrixLocation, false, modelMatrix);
             // Remember: You should set the data as a Float32Array!
             // (you can use the function toFLoat32() of an M3 object, see math2d.js)
             // To set uniform data for a vector or single value you have to use gl.uniform[0-3]fi[v](...)
@@ -101,6 +137,10 @@
             gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, model.indexBuffer);
             // draw geometry
             gl.drawElements(gl.TRIANGLES, model.vertexCount, gl.UNSIGNED_SHORT, 0);
+            let time = performance.now();
+            let rotOffset = Math.cos(time / 40);
+            model.rotation += rotOffset;
+            model.updateMatrix();
     	}
 
         setup();
