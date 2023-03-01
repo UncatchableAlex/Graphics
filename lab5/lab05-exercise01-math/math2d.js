@@ -430,8 +430,12 @@ class M3 extends Array{
     * @return {number} the determinant.
     */
     determinant(){
-        // TODO: Complete this method (ONLY FOR BONUS OBJECTIVE)
-        return 0;
+        // implementation using cross product. Here I take the determinant of the transpose just because
+        // it's easier to visualize. Remember det(A) == det(A^t)
+        let a = new V3(this[3], this[4], this[5]);
+        let b = new V3(this[6], this[7], this[8]);
+        let cross = a.cross(b);
+        return (this[0]*cross[0]) + (this[1]*cross[1]) + (this[2] * cross[2]);
     }
 
     toFloat32(){ return new Float32Array(this);}
@@ -553,16 +557,42 @@ class M3 extends Array{
         let v3 = new V3(v[0], v[1], 1)
         let mult_result = M3.multV3(m, v3);
         return new V2(mult_result[0], mult_result[1]);
-    }
+    } 
 
     /** Inverts the given matrix m.
     * @param {M3} m the matrix to be inverted.
     * @return {M3} a new matrix with the resulting inverted values.
     */
+
+    static cofactor(m, i, j) {
+        let minor = [];
+        for (let k = 0; k < 9; k++) {
+            // only select indices that aren't in the same row or column as (i, j)
+            if ((k < (j*3) || k >= (j*3) + 3) && k % 3 != i) { 
+                minor.push(m[k]);
+            }
+        }
+        let minorDet = (minor[0] * minor[3]) - (minor[1] * minor[2]);
+        let sign = (-1)**(i + j);
+        return minorDet * sign
+    }
+
     static invert(m){
-        let result = new M3();
-        // TODO: Complete this method (ONLY FOR BONUS OBJECTIVE)
-        return result;
+        // invert using the adjugate matrix
+        let cofactorMatrix = [];
+        for (let j = 0; j < 3; j++) {
+            for (let i = 0; i < 3; i++) {
+                let cof = this.cofactor(m, i, j);
+                cofactorMatrix.push(cof);
+            }
+        }
+        //
+        let det = m.determinant();
+        // use the identities: 
+        // adj(m) = cofactorMatrix^t
+        // m^-1 = adj(m) * (1/det(m))
+        let result = this.transpose(cofactorMatrix).map(x => x/det);
+        return new M3(result);
     }
 
     /** Transposes the given matrix m.
