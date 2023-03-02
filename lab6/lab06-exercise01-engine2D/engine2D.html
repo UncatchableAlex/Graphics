@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>A WebGL 2D Engine</title>
+</head>
+<body>
+	<canvas width="500" height="500" id="webgl-canvas"></canvas>
+
+    <script src="../common/webgl-debug.js"></script>
+    <script src="../common/math2d.js"></script>
+    <script src="../common/gl-utils.js"></script>
+    <script src="../common/webgl-lint.js"></script>
+    <script src="../common/input.js"></script>
+    <script src="../common/stats.min.js"></script>
+    <script src="../common/renderloop.js"></script>
+
+    <script src="renderer.js"></script>
+    <script src="modeltransform.js"></script>
+    <script src="primitives.js"></script>
+
+    <script type="text/javascript">
+        "use strict"; // use strict javascript compiling
+
+        //--------------------------------------------------
+        // Global Cashes
+        //--------------------------------------------------
+        var MeshCache = [];
+
+        // -----------------------------------------
+        // Global variables
+        // -----------------------------------------
+        var gl;
+        var canvas;
+        var g_renderLoop;
+
+        var g_renderer;
+        var g_bird;
+        var g_trunk1;
+        var g_trunk2;
+        var g_leaves1;
+        var g_leaves2;
+
+        // This will execute the setup function once the whole document has been loaded.
+        window.addEventListener("load",function(){
+            setup();
+        });
+
+        function setup(){
+            canvas = document.getElementById("webgl-canvas");
+            gl = GLUtils.createWebGLInstance(canvas);
+            gl.clearColor(0.85, 0.95, 0.9, 1); // set clear color (RGBA)
+            gl.setSize(800,800); // make the canvas 800 by 800
+
+            // our shader files are loaded here. Once completed, init is called
+            // for now there is only the standardShader, but you can add more by
+            // simply adding another path into the array shaderPaths.
+            let shaderPaths = ["shaders/standardShader.glsl"];
+            GLUtils.loadShaders(shaderPaths, init);
+        }
+
+        // Init is called when all Shaders are loaded (see last line of setup())
+        function init(){
+            Input.initialize(canvas);
+            g_renderer = new Renderer("standardShader");
+
+            // Create the mesh and material for the bird.
+            let birdMesh = Primitives.Bird2D.getMesh();
+            let birdMaterial = {tint: new V3(1,0.7,0)};
+            // Make a new Bird ModelTransform using the mesh and material given.
+            g_bird = new ModelTransform(birdMesh, birdMaterial);
+            g_bird.scale.set(0.2, 0.2); // make the Bird small
+
+            g_trunk1 = new ModelTransform(Primitives.Quad2D, {tint: [255/255, 119/255, 0/255]});
+            g_trunk2 = new ModelTransform(Primitives.Quad2D, {tint: [255/255, 119/255, 0/255]});
+            g_leaves1 = new ModelTransform(Primitives.Circle2D, {tint: [3/255, 252/255, 173/255]});
+            g_leaves2 = new ModelTransform(Primitives.Circle2D, {tint: [3/255, 252/255, 173/255]});
+            
+            // TODO: create all other models.
+            // Hint: You can shorten the above code by not making local variables
+            // for the meshes and materials everytime.
+
+            // TODO: position and scale all other models.
+
+
+            // once all models are set up we can start the render loop. This
+            // will call the given method (here draw()) about 60 times a second.
+            g_renderLoop = new RenderLoop(draw);
+            g_renderLoop.start();
+        }
+
+
+        /** Draw is being called from the RenderLoop about 60 times a second.
+         * deltaTime is the time between two frames, so at 60 frames per second,
+         * deltaTime is about 0.016 seconds. deltaTime can be used to create smooth
+         * movements of objects.
+         * @param {float} deltaTime This parameter is passed by the renderloop.
+         * deltaTime holds the durantion of one frame on average, wich equalts to 1/fps.
+         * On the default 60fps deltaTime equals to 1/60 or 0.0167. deltaTime is often used to adjust
+         * movement calculation to account for framerates other than 60fps dynamically.
+        */
+        function draw(deltaTime){
+            Input.update(); // update input from eg. keyboard and mouse for controls.
+            gl.clear(gl.COLOR_BUFFER_BIT); // clear color buffers
+
+            // bird movement controls
+            updateBirdMovement(deltaTime);
+
+            // we always have to update a model before drawing, mainly to
+            // update its model-matrix if it has been moved. (see ModelTransform->update())
+            // TODO: update all other models
+            g_bird.update();
+
+            // TODO: draw all other models
+            // this renderer uses the standardShader to draw the bird model.
+            g_renderer.drawModel(g_bird);
+        }
+
+        function updateBirdMovement(deltaTime){
+            // bird movement controls
+            let birdSpeed = 4;
+
+            if(Input.keyHold("arrowup")){
+                let up = g_bird.localUp;
+                up.multiplyScalar(deltaTime * birdSpeed); // scale according to speed and frameRate (ensure movement of "birdSpeed" units per second)
+                g_bird.position.addV(up);
+            }
+            if(Input.keyHold("arrowdown")){
+                let up = g_bird.localUp;
+                up.multiplyScalar(deltaTime * birdSpeed); // scale according to speed and frameRate
+                g_bird.position.subtractV(up);
+            }
+            if(Input.keyHold("arrowleft")){
+                g_bird.rotation += deltaTime * 270; // scale according to frameRate (ensure rotation of 270 degrees per second)
+            }
+            if(Input.keyHold("arrowright")){
+                g_bird.rotation -= deltaTime * 270; // scale according to frameRate
+            }
+        }
+
+    </script>
+</body>
+</html>
