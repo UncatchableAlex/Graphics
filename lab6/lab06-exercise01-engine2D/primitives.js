@@ -138,8 +138,12 @@ Primitives.Triangle2D = class{
         }
 
         // TODO: Add the positionData and indexData for a triangle mesh.
-        let positionData = [];
-        let indexData = [];
+        let positionData = [
+            0.0, 0.5,
+            0.5, 0.0,
+            -0.5, 0.0
+        ];
+        let indexData = [0, 1, 2];
 
         // make a new triange mesh and add it to the MeshCache.
         return GLUtils.createMesh("triangle2d", gl.TRIANGLES, indexData, positionData);

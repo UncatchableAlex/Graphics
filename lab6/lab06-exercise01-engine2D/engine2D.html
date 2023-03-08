@@ -16,6 +16,7 @@
     <script src="../common/renderloop.js"></script>
 
     <script src="renderer.js"></script>
+    <script src="treeRenderer.js"></script>
     <script src="modeltransform.js"></script>
     <script src="primitives.js"></script>
 
@@ -35,11 +36,15 @@
         var g_renderLoop;
 
         var g_renderer;
+        var g_treeRenderer;
         var g_bird;
         var g_trunk1;
         var g_trunk2;
         var g_leaves1;
         var g_leaves2;
+        var g_triangle;
+        var g_blade1;
+        var g_blade2;
 
         // This will execute the setup function once the whole document has been loaded.
         window.addEventListener("load",function(){
@@ -55,7 +60,7 @@
             // our shader files are loaded here. Once completed, init is called
             // for now there is only the standardShader, but you can add more by
             // simply adding another path into the array shaderPaths.
-            let shaderPaths = ["shaders/standardShader.glsl"];
+            let shaderPaths = ["shaders/standardShader.glsl", "shaders/windyTree.glsl"];
             GLUtils.loadShaders(shaderPaths, init);
         }
 
@@ -63,6 +68,7 @@
         function init(){
             Input.initialize(canvas);
             g_renderer = new Renderer("standardShader");
+            g_treeRenderer = new TreeRenderer("windyTree");
 
             // Create the mesh and material for the bird.
             let birdMesh = Primitives.Bird2D.getMesh();
@@ -71,11 +77,30 @@
             g_bird = new ModelTransform(birdMesh, birdMaterial);
             g_bird.scale.set(0.2, 0.2); // make the Bird small
 
-            g_trunk1 = new ModelTransform(Primitives.Quad2D, {tint: [255/255, 119/255, 0/255]});
-            g_trunk2 = new ModelTransform(Primitives.Quad2D, {tint: [255/255, 119/255, 0/255]});
-            g_leaves1 = new ModelTransform(Primitives.Circle2D, {tint: [3/255, 252/255, 173/255]});
-            g_leaves2 = new ModelTransform(Primitives.Circle2D, {tint: [3/255, 252/255, 173/255]});
-            
+            g_trunk1 = new ModelTransform(Primitives.Quad2D.getMesh(), {tint: [255/255, 119/255, 0/255]});
+            g_trunk2 = new ModelTransform(Primitives.Quad2D.getMesh(), {tint: [255/255, 119/255, 0/255]});
+            g_leaves1 = new ModelTransform(Primitives.Circle2D.getMesh(), {tint: [3/255, 252/255, 173/255]});
+            g_leaves2 = new ModelTransform(Primitives.Circle2D.getMesh(), {tint: [3/255, 252/255, 173/255]});
+            g_triangle = new ModelTransform(Primitives.Triangle2D.getMesh(), {tint: [0.9, 0, 0]});
+            g_blade1 = new ModelTransform(Primitives.Quad2D.getMesh(), {tint: [0.2, 0.1, 0.6]});
+            g_blade2 = new ModelTransform(Primitives.Quad2D.getMesh(), {tint: [0.2, 0.1, 0.6]});
+
+            g_trunk1.scale.set(0.1, 0.3);
+            g_trunk1.position.set(-0.3, -0.5);
+            g_trunk2.scale.set(0.1, 0.3);
+            g_trunk2.position.set(0.4, 0.2);
+            g_leaves1.scale.set(0.4, 0.4);
+            g_leaves1.position.set(-0.3, -0.2);
+            g_leaves2.scale.set(0.4, 0.4);
+            g_leaves2.position.set(0.4, 0.5);
+            g_triangle.scale.set(0.4, 1);
+            g_triangle.position.set(-0.6, 0.1);
+            g_blade1.scale.set(0.1, 0.5);
+            g_blade1.position.set(-0.6, 0.55);
+            g_blade2.scale.set(0.5, 0.1);
+            g_blade2.position.set(-0.6, 0.55);
+
+
             // TODO: create all other models.
             // Hint: You can shorten the above code by not making local variables
             // for the meshes and materials everytime.
@@ -104,16 +129,24 @@
             gl.clear(gl.COLOR_BUFFER_BIT); // clear color buffers
 
             // bird movement controls
-            updateBirdMovement(deltaTime);
+            updateBirdMovement(deltaTime) * 100;
+            let rot = Time.time * 100;
+            g_blade1.rotation = rot;
+            g_blade2.rotation = rot;
+
 
             // we always have to update a model before drawing, mainly to
             // update its model-matrix if it has been moved. (see ModelTransform->update())
             // TODO: update all other models
-            g_bird.update();
+            [g_bird, g_trunk1, g_trunk2, g_triangle, g_blade1, g_blade2].forEach(n => {
+                n.update();
+                g_renderer.drawModel(n);
+            });
+            g_leaves1.update();
+            g_treeRenderer.drawModel(g_leaves1, {time: Time.time});
+            g_leaves2.update();
+            g_treeRenderer.drawModel(g_leaves2, {time: Time.time});
 
-            // TODO: draw all other models
-            // this renderer uses the standardShader to draw the bird model.
-            g_renderer.drawModel(g_bird);
         }
 
         function updateBirdMovement(deltaTime){
