@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>WebGL Lighting</title>
+</head>
+<body>
+	<canvas width="500" height="500" id="webgl-canvas"></canvas>
+
+    <script src="../common/webgl-debug.js"></script>
+    <script src="../common/math.js"></script>
+    <script src="../common/gl-utils.js"></script>
+    <script src="../common/webgl-lint.js"></script>
+    <script src="../common/input.js"></script>
+    <script src="../common/renderloop.js"></script>
+    <script src="../common/camera.js"></script>
+    <script src="../common/grid.js"></script>
+    <script src="../common/objparser.js"></script>
+    <script src="../common/stats.min.js"></script>
+    <script src="../common/dat.gui.min.js"></script>
+
+    <script src="renderer.js"></script>
+    <script src="pointLightRenderer.js"></script>
+    <script src="dirLightRenderer.js"></script>
+    <script src="normalRenderer.js"></script>
+    <script src="modeltransform.js"></script>
+    <script src="primitives.js"></script>
+
+    <script type="text/javascript">
+        "use strict"; // use strict javascript compiling
+
+        //--------------------------------------------------
+        // Global Cashes
+        //--------------------------------------------------
+        var MeshCache = {}; // here all mesh objects are stored, see GLUtils.createMesh() for details on how a mesh is added.
+
+        // -----------------------------------------
+        // Global variables
+        // -----------------------------------------
+        var gl;
+        var canvas;
+        var renderLoop;
+
+        var g_renderer;
+        var g_dirLightRenderer;
+        var g_normalRenderer;
+        var g_pointLightRenderer;
+
+        var g_camera;
+        var g_cameraController;
+
+        var ground;
+        var houseBase, houseRoof, door;
+        var treeTrunk, treeCrown;
+        var personBody, personArms, personHead;
+
+        // a basic grid with x, y, and z axis, to visualize our space.
+        var g_grid; // the grid model
+
+        // lighting
+        var g_lightingData = {
+            lightDirX: -1,
+            lightDirY: -1,
+            lightDirZ: -0.5,
+            lightColorR: 1.0,
+            lightColorG: 1.0,
+            lightColorB: 1.0
+        }
+
+        // magical dat.gui stuff that connects the lighting values to the
+        // user interface on the top right
+        var gui = new dat.GUI();
+        gui.add(g_lightingData, "lightDirX", -10.0, 10.0);
+        gui.add(g_lightingData, "lightDirY", -10.0, 10.0);
+        gui.add(g_lightingData, "lightDirZ", -10.0, 10.0);
+        gui.add(g_lightingData, "lightColorR", 0.0, 1.0);
+        gui.add(g_lightingData, "lightColorG", 0.0, 1.0);
+        gui.add(g_lightingData, "lightColorB", 0.0, 1.0);
+
+        // This will execute the setup function once the whole document has been loaded.
+        window.addEventListener("load",function(){
+            setup();
+        });
+
+        function setup(){
+            canvas = document.getElementById("webgl-canvas");
+            gl = GLUtils.createWebGLInstance(canvas, true, true);
+            gl.clearColor(0.1, 0.1, 0.1, 1); // set clear color (RGBA)
+            gl.fitScreen();
+            gl.enable(gl.DEPTH_TEST);
+            gl.depthFunc(gl.LEQUAL);
+
+            // our shader files are loaded here. Once completed, init is called
+            let shaderPaths = ["shaders/standardShader.glsl",
+                                "shaders/dirLightShader.glsl",
+                                "shaders/normalShader.glsl",
+                                "shaders/pointLightShader.glsl"
+                            ];
+            GLUtils.loadShaders(shaderPaths, init);
+        }
+
+        function init(){
+            Input.initialize(canvas);
+
+            g_renderer = new Renderer("standardShader");
+            g_dirLightRenderer = new DirLightRenderer("dirLightShader");
+            g_normalRenderer = new NormalRenderer("normalShader");
+            g_pointLightRenderer = new PointLightRenderer("pointLightShader");
+
+            g_camera = new PerspectiveCamera(45, 0.1, 1000, canvas.width / canvas.height);
+            g_cameraController = new OrbiterCameraController(canvas, g_camera, new V3(0,2,0), 10);
+
+            let grassMat  = {tint: new V3(0.33,0.49,0.27), shininess: 25};  // grass green
+            let brickMat  = {tint: new V3(0.79,0.25,0.32), shininess: 25};  // brick red
+            let roofMat   = {tint: new V3(0.90,0.33,0.20), shininess: 25};  // light brown
+            let barkMat   = {tint: new V3(0.17,0.11,0.05), shininess: 25};  // dark brown
+            let leavesMat = {tint: new V3(0.38,0.54,0.23), shininess: 5};  // leaf green
+            let woodMat   = {tint: new V3(0.52,0.37,0.26), shininess: 25};  // wood brown
+            let shirtMat  = {tint: new V3(0.71,0.85,0.97), shininess: 25};  // light blue
+            let headMat   = {tint: new V3(1.0,1.0,1.0), shininess: 25};  // dark blue
+
+            ground      = new ModelTransform(Primitives.Quad.getMesh(),     grassMat);
+            houseBase   = new ModelTransform(Primitives.Cube.getMesh(),     brickMat);
+            houseRoof   = new ModelTransform(Primitives.Pyramid.getMesh(),  roofMat);
+            door        = new ModelTransform(Primitives.Cube.getMesh(),     woodMat);
+            treeTrunk   = new ModelTransform(Primitives.Cylinder.getMesh(), barkMat);
+            treeCrown   = new ModelTransform(Primitives.Sphere.getMesh(),   leavesMat);
+            personBody  = new ModelTransform(Primitives.Cube.getMesh(),     shirtMat);
+            personArms  = new ModelTransform(Primitives.Cube.getMesh(),     shirtMat);
+            personHead  = new ModelTransform(Primitives.Sphere.getMesh(),   headMat);
+
+            ground.scale.set(10,10,1);
+            ground.rotation.set(-90,0,0);
+            ground.position.set(0,-0.01,0); // To avoid ugly overlap with house and tree on the bottom
+
+            houseBase.position.set(2,1,-1);
+            houseBase.scale.set(2.5,2,2);
+            houseRoof.position.set(2,2,-1);
+            houseRoof.scale.set(3,2.5,2.5);
+            door.position.set(2,0.75,0);
+            door.scale.set(0.75,1.5,0.5);
+
+            treeTrunk.position.set(-3,1,0);
+            treeCrown.position.set(-3,3,0);
+            treeCrown.scale.set(1.5,2,1.5);
+
+            personBody.position.set(0, 0.5, 0);
+            personArms.position.set(0, 0.5, 0);
+            personHead.position.set(0, 1, 0);
+            personBody.scale.set(0.3, 1, 0.3);
+            personArms.scale.set(1, 0.2, 0.2);
+            personHead.scale.set(0.3, 0.3, 0.3);
+            personBody.rotation.set(0, 45, 0);
+            personArms.rotation.set(0, 45, 0);
+            personHead.rotation.set(0, 45, 0);
+
+            g_grid = new GridAxis();
+
+            renderLoop = new RenderLoop(draw).start();
+        }
+
+        // deltaTime = time it takes to execute one Frame (calculated in renderloop)
+        function draw(deltaTime){
+            Input.update();
+            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+            g_cameraController.update();
+
+            ground.update();
+            houseBase.update();
+            houseRoof.update();
+            door.update();
+            treeTrunk.update();
+            treeCrown.update();
+
+            // this updates the position and rotation of the person, so we are able to move around with arrow keys.
+            updatePerson(deltaTime);
+
+            // setup lighting data to pass to renderers from datgui data object
+            // we make V3s out of the individual values so they can be used more easily
+            // in the renderer functions.
+            let shaderData = {};
+            let lightingData = {};
+            lightingData.lightColor = new V3(g_lightingData.lightColorR,
+                                                 g_lightingData.lightColorG,
+                                                 g_lightingData.lightColorB);
+            lightingData.lightPosition = new V3(personHead.position[0], personHead.position[1], personHead.position[2]);
+            shaderData.lightingData = lightingData; // attach lighting data to shader data.
+
+            // TODO: the g_renderer can be used to draw your geometry as we used to.
+            // change this to the g_dirLightRenderer once you want to test your
+            // lighting implementation
+
+            let renderer = g_pointLightRenderer;
+
+            renderer.drawModel(ground, g_camera, shaderData);
+            renderer.drawModel(houseBase, g_camera, shaderData);
+            renderer.drawModel(houseRoof, g_camera, shaderData);
+            renderer.drawModel(door, g_camera, shaderData);
+
+            renderer.drawModel(treeTrunk, g_camera, shaderData);
+            renderer.drawModel(treeCrown, g_camera, shaderData);
+
+            renderer.drawModel(personBody, g_camera, shaderData);
+            renderer.drawModel(personArms, g_camera, shaderData);
+            g_renderer.drawModel(personHead, g_camera, shaderData);
+
+            g_grid.draw(g_camera);
+        }
+
+        function updatePerson(deltaTime) {
+            let speed = 4;
+            let movement = 0;
+            let rotation = 0;
+            if(Input.keyHold("arrowup")){
+                movement = 1;
+            }
+            if(Input.keyHold("arrowdown")){
+                movement = -1;
+            }
+            if(Input.keyHold("arrowleft")){
+                rotation = 1;
+            }
+            if(Input.keyHold("arrowright")){
+                rotation = -1;
+            }
+            let movementVector = personBody.localForward;
+            movementVector.multiplyScalar(deltaTime * speed * movement); // scale according to speed and frameRate
+            personBody.position.addV(movementVector);
+            personArms.position.addV(movementVector);
+            personHead.position.addV(movementVector);
+
+            personBody.rotation.y += deltaTime * 270 * rotation; // scale according to frameRate
+            personArms.rotation.y += deltaTime * 270 * rotation; // scale according to frameRate
+            personHead.rotation.y += deltaTime * 270 * rotation; // scale according to frameRate
+
+            personBody.update();
+            personArms.update();
+            personHead.update();
+        }
+
+    </script>
+</body>
+</html>

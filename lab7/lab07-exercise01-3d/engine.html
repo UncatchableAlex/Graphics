@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>WebGL 3D Camera</title>
+    </script>
+</head>
+<body>
+	<canvas width="500" height="500" id="webgl-canvas"></canvas>
+
+    <script src="../common/webgl-debug.js"></script>
+    <script src="../common/webgl-lint.js"></script>
+    <script src="../common/stats.min.js"></script>
+    <script src="../common/dat.gui.min.js"></script>
+    <script src="../common/math.js"></script>
+    <script src="../common/gl-utils.js"></script>
+    <script src="../common/input.js"></script>
+    <script src="../common/renderloop.js"></script>
+
+    <script src="renderer.js"></script>
+    <script src="modeltransform.js"></script>
+    <script src="primitives.js"></script>
+
+    <script type="text/javascript">
+        "use strict"; // use strict javascript compiling
+
+        //--------------------------------------------------
+        // Global Cashes
+        //--------------------------------------------------
+        var MeshCache = {}; // here all mesh objects are stored, see GLUtils.createMesh() for details on how a mesh is added.
+
+        // -----------------------------------------
+        // Global variables
+        // -----------------------------------------
+        var gl;
+        var canvas;
+        var renderLoop;
+
+        var g_renderer;
+
+        var g_cubeLeft, g_sphereLeft, g_tetrahedronLeft;
+        var g_cubeRight, g_sphereRight, g_tetrahedronRight;
+
+        // our Camera Data for position, rotation and near/far of the camera
+        var cameraData = {
+            positionX :  0.0,
+            positionY :  0.0,
+            positionZ :  0.0,
+            roll : 0.0,
+            pitch : 0.0,
+            yaw : 0.0,
+            near: 0.1,
+            far: 10,
+            fov: 45
+        };
+        // magical dat.gui stuff that connects the cameraData values to the
+        // user interface on the top right
+        var gui = new dat.GUI();
+        gui.add(cameraData, "positionX", -10, 10);
+        gui.add(cameraData, "positionY", -10, 10);
+        gui.add(cameraData, "positionZ", -10, 10);
+        gui.add(cameraData, "roll", -180, 180);
+        gui.add(cameraData, "pitch", -180, 180);
+        gui.add(cameraData, "yaw", -180, 180);
+        gui.add(cameraData, "near", 0.001, 2);
+        gui.add(cameraData, "far", 0.1, 20);
+        gui.add(cameraData, "fov", 10, 120);
+
+        // This will execute the setup function once the whole document has been loaded.
+        window.addEventListener("load",function(){
+            setup();
+        });
+
+        function setup(){
+            canvas = document.getElementById("webgl-canvas");
+
+            // TODO: set paramerter fitScreen from false to true.
+            gl = GLUtils.createWebGLInstance(canvas, true);
+            gl.clearColor(0.85, 0.95, 0.9, 1); // set clear color (RGBA)
+            gl.enable(gl.DEPTH_TEST);
+            gl.depthFunc(gl.LEQUAL);
+
+            // our shader files are loaded here. Once completed, init is called.
+            let shaderPaths = ["shaders/standardShader.glsl"];
+            GLUtils.loadShaders(shaderPaths, init);
+        }
+
+        function init(){
+            Input.initialize(canvas);
+
+            g_renderer = new Renderer("standardShader");
+
+            // Make the different materials (for now just different color values)
+            let yellowMat = {tint: new V3(1,1,0)};
+            let greenMat = {tint: new V3(0,1,0)};
+            let redMat = {tint: new V3(1,0,0)};
+
+            let cyanMat = {tint: new V3(0,1,1)};
+            let blueMat = {tint: new V3(0,0,1)};
+            let purpleMat = {tint: new V3(1,0,1)};
+
+            // create and position all the ModelTransforms for the spheres, cubes and pyramids.
+            g_cubeLeft = new ModelTransform(Primitives.Cube.getMesh(), yellowMat);
+            g_cubeLeft.position.set(-1,0,-2);
+            g_sphereLeft = new ModelTransform(Primitives.Sphere.getMesh(), greenMat);
+            g_sphereLeft.position.set(-1,0,0);
+            g_sphereLeft.scale.set(0.5,0.5,0.5); // set sphere radius to 0.5
+            g_tetrahedronLeft = new ModelTransform(Primitives.Tetrahedron.getMesh(), redMat);
+            g_tetrahedronLeft.position.set(-1,0,2);
+            g_tetrahedronLeft.scale.set(0.5,0.5,0.5);
+
+            g_cubeRight = new ModelTransform(Primitives.Cube.getMesh(), cyanMat);
+            g_cubeRight.position.set(1,0,-2);
+            g_sphereRight = new ModelTransform(Primitives.Sphere.getMesh(), blueMat);
+            g_sphereRight.position.set(1,0,0);
+            g_sphereRight.scale.set(0.5,0.5,0.5); // set sphere radius to 0.5
+            g_tetrahedronRight = new ModelTransform(Primitives.Tetrahedron.getMesh(), purpleMat);
+            g_tetrahedronRight.position.set(1,0,2);
+            g_tetrahedronRight.scale.set(0.5,0.5,0.5);
+
+            // start the renderloop (60 fps by default)
+            renderLoop = new RenderLoop(draw).start();
+        }
+
+        function draw(deltaTime) {
+            Input.update();
+            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+     
+            // create the camera matrix
+            let rotxC = M4.rotationMatrixX(cameraData.pitch);
+            let rotyC = M4.rotationMatrixY(cameraData.yaw);
+            let rotzC = M4.rotationMatrixZ(cameraData.roll);
+            let transC = M4.translationMatrix(cameraData.positionX, cameraData.positionY, cameraData.positionZ);
+            let cameraMatrix = M4.multM4(transC, M4.multM4(rotyC, M4.multM4(rotxC, rotzC)));
+
+            // create the view matrix
+            let viewMatrix = M4.invert(cameraMatrix);
+
+            // create the projection matrix
+            let aspect = canvas.width/canvas.height;
+            let projectionMatrix = M4.perspective(cameraData.fov, cameraData.near, cameraData.far, aspect);
+
+            // create camera object with matrices attached to pass to renderer
+            let camera = {
+                viewMatrix: viewMatrix,
+                projectionMatrix: projectionMatrix
+            };
+
+            // update all model matrices for every ModelTransform
+            g_cubeLeft.update();
+            g_sphereLeft.update();
+            g_tetrahedronLeft.update();
+            g_cubeRight.update();
+            g_sphereRight.update();
+            g_tetrahedronRight.update();
+
+            // draw all the models, camera hold matrix data for view and projection matrix
+            g_renderer.drawModel(g_cubeLeft, camera);
+            g_renderer.drawModel(g_sphereLeft, camera);
+            g_renderer.drawModel(g_tetrahedronLeft, camera);
+            g_renderer.drawModel(g_cubeRight, camera);
+            g_renderer.drawModel(g_sphereRight, camera);
+            g_renderer.drawModel(g_tetrahedronRight, camera);
+        }
+    </script>
+</body>
+</html>
