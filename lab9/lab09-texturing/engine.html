@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>WebGL Texturing</title>
+</head>
+<body>
+	<canvas width="500" height="500" id="webgl-canvas"></canvas>
+
+    <script src="../common/webgl-debug.js"></script>
+    <script src="../common/webgl-lint.js"></script>
+    <script src="../common/math.js"></script>
+    <script src="../common/gl-utils.js"></script>
+    <script src="../common/input.js"></script>
+    <script src="../common/renderloop.js"></script>
+    <script src="../common/camera.js"></script>
+    <script src="../common/grid.js"></script>
+    <script src="../common/dat.gui.min.js"></script>
+    <script src="../common/stats.min.js"></script>
+    <script src="../common/objparser.js"></script>
+    <script src="renderer.js"></script>
+    <script src="modeltransform.js"></script>
+    <script src="primitives.js"></script>
+
+    <script type="text/javascript">
+        "use strict"; // use strict javascript compiling
+
+        //--------------------------------------------------
+        // Global Cashes
+        //--------------------------------------------------
+        var MeshCache = {}; // here all mesh objects are stored, see GLUtils.createMesh() for details on how a mesh is added.
+        var TextureCache = {}; // here all texture objects are stored, see GLUtils.loadTexture() for details on how a texture is added.
+
+        // -----------------------------------------
+        // Global variables
+        // -----------------------------------------
+        var gl;
+        var canvas;
+        var renderLoop;
+
+        var g_camera;
+        var g_cameraController;
+
+        var sphere, cylinder, pyramid, cube, quad, fighter;
+
+        var g_grid;
+
+        var g_renderer;
+
+        // lighting
+        var g_lightingData = {
+            directionalLight: new V3(-0.2, -0.5, -0.5).normalize(), // light direction
+            directionalColor: new V3(1.0, 1.0, 1.0), // light color by default white
+            ambientColor: new V3(0.2, 0.2, 0.2) // dark gray
+        }
+
+        // This will execute the setup function once the whole document has been loaded.
+        window.addEventListener("load",function(){
+            setup();
+        });
+
+        function setup(){
+            canvas = document.getElementById("webgl-canvas");
+            gl = GLUtils.createWebGLInstance(canvas, true, true); // fullscreen = true, debugging = true
+            gl.clearColor(0.85, 0.95, 0.9, 1); // set clear color (RGBA)
+            gl.fitScreen();
+            gl.enable(gl.DEPTH_TEST);
+            gl.depthFunc(gl.LEQUAL);
+
+            // our shader files are loaded here. Once completed, init is called
+            // for now there is only the standardShader, but you can add more by
+            // simply adding another path into the array shaderPaths.
+            let shaderPaths = ["shaders/standardShader.glsl"];
+            GLUtils.loadShaders(shaderPaths, init);
+        }
+
+        function init(){
+            Input.initialize(canvas);
+
+            g_renderer = new Renderer("standardShader");
+
+            g_camera = new PerspectiveCamera(45, 0.1, 1000, canvas.width / canvas.height);
+            g_cameraController = new OrbiterCameraController(canvas, g_camera);
+            g_cameraController.target.set(0,0,0);
+
+            //TODO: load texture from ressources folder to TextureCache
+            GLUtils.loadTexture("wood", "resources/wood.png")
+            //TODO: add mainTexture property with loaded texture to material
+            // Material with white tint color
+            let uvTestMat = {tint: new V3(1,1,1), mainTexture: "wood"};
+            let fighterMesh = OBJLoader.getMesh("fighterMesh", "resources/fighter.obj");
+            fighter = new ModelTransform(fighterMesh, uvTestMat);
+           /* 
+            sphere = new ModelTransform(Primitives.Sphere.getMesh(), uvTestMat);
+            cylinder = new ModelTransform(Primitives.Cylinder.getMesh(), uvTestMat);
+            pyramid = new ModelTransform(Primitives.Pyramid.getMesh(), uvTestMat);
+            cube = new ModelTransform(Primitives.Cube.getMesh(), uvTestMat);
+            quad = new ModelTransform(Primitives.Quad.getMesh(), uvTestMat);
+
+            sphere.position.set(1.5,0,-1.5);
+            cylinder.position.set(-1.5,0,-1.5);
+            pyramid.position.set(0,0,0);
+            cube.position.set(1.5,0,1.5);
+            quad.position.set(-1.5,0,1.5);
+            */
+           fighter.position.set(0, 0, 0);
+
+           g_grid = new GridAxis();
+
+            renderLoop = new RenderLoop(draw).start();
+        }
+
+        function draw(deltaTime){
+            Input.update();
+            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+            g_cameraController.update();
+            /*
+            sphere.update();
+            cylinder.update();
+            pyramid.update();
+            cube.update();
+            quad.update();
+            */
+           fighter.update();
+            let shaderData = { lightingData: g_lightingData};
+
+            /*
+            g_renderer.drawModel(sphere, g_camera, shaderData);
+            g_renderer.drawModel(cylinder, g_camera, shaderData);
+            g_renderer.drawModel(pyramid, g_camera, shaderData);
+            g_renderer.drawModel(cube, g_camera, shaderData);
+            g_renderer.drawModel(quad, g_camera, shaderData);
+            */
+           g_renderer.drawModel(fighter, g_camera, shaderData);
+            g_grid.draw(g_camera);
+        }
+    </script>
+</body>
+</html>
