@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>America Sim</title>
+</head>
+<body>
+	<canvas width="500" height="500" id="webgl-canvas"></canvas>
+
+    <script src="common/webgl-debug.js"></script>
+    <script src="common/webgl-lint.js"></script>
+    <script src="common/matrix.js"></script>
+    <script src="common/gl-utils.js"></script>
+    <script src="common/input.js"></script>
+    <script src="common/renderloop.js"></script>
+    <script src="common/camera.js"></script>
+    <script src="common/dat.gui.min.js"></script>
+    <script src="common/stats.min.js"></script>
+    <script src="common/objparser.js"></script>
+    <script src="renderer.js"></script>
+    <script src="modeltransform.js"></script>
+    <script src="primitives.js"></script>
+
+    <script type="text/javascript">
+        "use strict"; // use strict javascript compiling
+
+        //--------------------------------------------------
+        // Caches
+        //--------------------------------------------------
+        var MeshCache = {}; // here all mesh objects are stored, see GLUtils.createMesh() for details on how a mesh is added.
+        var TextureCache = {}; // here all texture objects are stored, see GLUtils.loadTexture() for details on how a texture is added.
+        // -----------------------------------------
+        // variables
+        // -----------------------------------------
+        var gl;
+        let canvas;
+        let renderLoop;
+
+        let camera;
+        let cameraController;
+
+        let fighter;
+        let ground;
+
+        let renderer;
+
+        // lighting
+        let lightingData = {
+            lightColor: new Vec([1.0, 1.0, 1.0]),
+            lightPosition: new Vec([1.0, 0, 1])
+        }
+
+        // This will execute the setup function once the whole document has been loaded.
+        window.addEventListener("load",function(){
+            setup();
+        });
+
+
+        function setup(){
+            canvas = document.getElementById("webgl-canvas");
+            gl = GLUtils.createWebGLInstance(canvas, true, true); // fullscreen = true, debugging = true
+            gl.clearColor(0.85, 0.95, 0.9, 1); // set clear color (RGBA)
+            gl.fitScreen();
+            gl.enable(gl.DEPTH_TEST);
+            gl.depthFunc(gl.LEQUAL);
+
+            let shaderPaths = ["shaders/pointLightShader.glsl"];
+            GLUtils.loadShaders(shaderPaths, init);
+        }
+
+        function init(){
+            Input.initialize(canvas);
+
+            renderer = new Renderer("pointLightShader");
+
+            camera = new PerspectiveCamera(45, 0.1, 1000, canvas.width / canvas.height);
+            cameraController = new OrbiterCameraController(canvas, camera, undefined, 0.1);
+            cameraController.target.copyContents([0,0,0]);
+
+            //load texture from resources folder to TextureCache
+            GLUtils.loadTexture("wood", "resources/wood.png");
+            GLUtils.loadTexture("dirt", "resources/dirt.png");
+            // Material with white tint color
+            let uvMat = {tint: new Vec([1, 0, 0]), mainTexture: "wood", shininess: 100};
+            let fighterMesh = OBJLoader.getMesh("fighterMesh", "resources/fighter.obj");
+            fighter = new ModelTransform(fighterMesh, uvMat);
+
+            fighter.position.set([0, 0, 0]);
+
+            let groundMesh = Primitives.Quad.getMesh();
+            let groundMat = {tint: new Vec([74/255, 44/255, 44/255]), mainTexture: "dirt", shininess: 10};
+            ground = new ModelTransform(groundMesh, groundMat, new Vec([0,0,0]), new Vec([10,10,10]), new Vec([0, 0, 0]));
+            renderLoop = new RenderLoop(draw).start();
+        }
+
+        function draw(deltaTime){
+            Input.update();
+            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+            cameraController.update();
+
+            fighter.update();
+            lightingData.lightPosition = cameraController.target;
+            let shaderData = { lightingData: lightingData};
+
+            renderer.drawModel(fighter, camera, shaderData);
+            renderer.drawModel(ground, camera, shaderData);
+        }
+    </script>
+</body>
+</html>
