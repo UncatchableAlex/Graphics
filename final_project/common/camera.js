@@ -136,7 +136,7 @@ class OrbiterCameraController {
         let distPerFrame = 0.03;
         this.forward[0] = Math.sin(rads);
         this.forward[1] = Math.cos(rads);
-       // let forward = 
+        // let the player move around:
         if (Input.keyHold('w')) {
             this.target.x -= this.forward[0] * distPerFrame;
             this.target.z -= this.forward[1] * distPerFrame;
@@ -155,9 +155,9 @@ class OrbiterCameraController {
         }
 
         this.camera.cameraMatrix = SquareMat.translation([this.target.x, this.offsetY + this.target.y, this.target.z]);
-        this.camera.cameraMatrix = Mat.mult(this.camera.cameraMatrix, SquareMat3.roty(this.yaw).padded());
-        this.camera.cameraMatrix = Mat.mult(this.camera.cameraMatrix, SquareMat3.rotx(this.pitch).padded());
-        this.camera.cameraMatrix = Mat.mult(this.camera.cameraMatrix, SquareMat.translation([0,0,this.distance]));
+        this.camera.cameraMatrix = SquareMat.mult(this.camera.cameraMatrix, SquareMat3.roty(this.yaw).padded());
+        this.camera.cameraMatrix = SquareMat.mult(this.camera.cameraMatrix, SquareMat3.rotx(this.pitch).padded());
+        this.camera.cameraMatrix = SquareMat.mult(this.camera.cameraMatrix, SquareMat.translation([0,0,this.distance]));
 
         this.camera.viewMatrix = this.camera.cameraMatrix.clone();
         this.camera.viewMatrix.invert();

@@ -7,8 +7,10 @@
 <body>
 	<canvas width="500" height="500" id="webgl-canvas"></canvas>
 
-    <script src="common/webgl-debug.js"></script>
+  <!--  <script src="common/webgl-debug.js"></script> -->
+  <!--  <script src="common/webgl-lint.js"></script> -->
     <script src="common/webgl-lint.js"></script>
+    <script src="common/webgl-debug.js"></script>
     <script src="common/matrix.js"></script>
     <script src="common/gl-utils.js"></script>
     <script src="common/input.js"></script>
@@ -33,6 +35,7 @@
         // variables
         // -----------------------------------------
         var gl;
+        var ext;
         let canvas;
         let renderLoop;
 
@@ -41,6 +44,7 @@
 
         let fighter;
         let ground;
+        let groundScale;
 
         let renderer;
 
@@ -63,7 +67,7 @@
             gl.fitScreen();
             gl.enable(gl.DEPTH_TEST);
             gl.depthFunc(gl.LEQUAL);
-
+            ext = gl.getExtension('ANGLE_instanced_arrays');
             let shaderPaths = ["shaders/pointLightShader.glsl"];
             GLUtils.loadShaders(shaderPaths, init);
         }
@@ -76,20 +80,18 @@
             camera = new PerspectiveCamera(45, 0.1, 1000, canvas.width / canvas.height);
             cameraController = new OrbiterCameraController(canvas, camera, undefined, 0.1);
             cameraController.target.copyContents([0,0,0]);
+            groundScale = 1;
 
             //load texture from resources folder to TextureCache
             GLUtils.loadTexture("wood", "resources/wood.png");
             GLUtils.loadTexture("dirt", "resources/dirt.png");
             // Material with white tint color
-            let uvMat = {tint: new Vec([1, 0, 0]), mainTexture: "wood", shininess: 100};
+            let uvMat = {tint: new Vec([0.5, 0, 0]), mainTexture: "wood", shininess: 20};
             let fighterMesh = OBJLoader.getMesh("fighterMesh", "resources/fighter.obj");
-            fighter = new ModelTransform(fighterMesh, uvMat);
-
-            fighter.position.set([0, 0, 0]);
-
+            fighter = new ModelTransform(fighterMesh, uvMat, new Vec([0,0,-1]));
             let groundMesh = Primitives.Quad.getMesh();
-            let groundMat = {tint: new Vec([74/255, 44/255, 44/255]), mainTexture: "dirt", shininess: 10};
-            ground = new ModelTransform(groundMesh, groundMat, new Vec([0,0,0]), new Vec([10,10,10]), new Vec([0, 0, 0]));
+            let groundMat = {tint: new Vec([184/255, 138/255, 11/255]), mainTexture: "dirt", shininess: 10};
+            ground = new ModelTransform(groundMesh, groundMat, new Vec([0,-0.2 * groundScale,0]), new Vec([270, 0, 0]), new Vec([groundScale, groundScale, groundScale]));
             renderLoop = new RenderLoop(draw).start();
         }
 
@@ -99,11 +101,42 @@
             cameraController.update();
 
             fighter.update();
+           // ground.update();
             lightingData.lightPosition = cameraController.target;
             let shaderData = { lightingData: lightingData};
 
-            renderer.drawModel(fighter, camera, shaderData);
-            renderer.drawModel(ground, camera, shaderData);
+            renderer.drawModels(fighter, camera, shaderData, [[0,0,0]]);
+            //renderer.drawModel(ground, camera, shaderData);
+            drawGround(10, shaderData);
+        }
+
+        function drawGround(radius, shaderData) {
+            // r = sqrt(x*x + z*z)
+            // r*r = x*x + z*z
+            // sqrt(r*r - z*z) = x
+            let pos = [];
+            let forward = cameraController.forward.clone()
+            // get the vector that tracks the left side of the player's vision:
+            let leftVisionVec = new Vec(Mat.mult(SquareMat.rot(2, 1, 2, camera.fov / 2), forward));
+            // get the vector that tracks the right side of the player's vision:
+            let rightVisionVec = new Vec(Mat.mult(SquareMat.rot(2, 2, 1, camera.fov / 2), forward));
+            for (let i = -radius; i <= radius; i++) {
+                let arcBound = Math.sqrt((radius + 1) * (radius + 1) - i*i);
+                let visionBound = i * Math.sin(camera.fov / 2)
+
+                let leftVisionBound = leftVisionVec.clone();
+                leftVisionVec.scale(i);
+                let rightVisionBound = rightVisionVec.clone();
+                rightVisionVec.scale(i);
+                
+                for(let x = -arcBound; x <= arcBound; x++) {
+                    pos.push([
+                        x*groundScale + Math.floor(cameraController.target.x), 
+                        -0.3 * groundScale, 
+                        i*groundScale + Math.floor(cameraController.target.z)]);
+                }
+            }
+            renderer.drawModels(ground, camera, shaderData, pos);
         }
     </script>
 </body>

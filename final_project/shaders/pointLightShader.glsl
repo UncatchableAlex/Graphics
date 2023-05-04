@@ -7,9 +7,8 @@ attribute vec3 a_position; // the position of each vertex
 // Create new attribute a_normal
 attribute vec3 a_normal;
 attribute vec2 a_texcoord;
+attribute mat4 a_matrixM; // the model matrix of this object
 
-
-uniform mat4 u_matrixM; // the model matrix of this object
 uniform mat4 u_matrixV; // the view matrix of the camera
 uniform mat4 u_matrixP; // the projection matrix of the camera
 
@@ -32,9 +31,9 @@ void main() {
     v_texcoord = a_texcoord;
 
     // (For specular) calculate world position
-    v_worldpos = (u_matrixM * vec4(a_position, 1)).xyz;
+    v_worldpos = (a_matrixM * vec4(a_position, 1)).xyz;
     // calculate new position
-    gl_Position = u_matrixP * u_matrixV * u_matrixM * vec4(a_position, 1);
+    gl_Position = u_matrixP * u_matrixV * a_matrixM * vec4(a_position, 1);
     //gl_Position = vec4(a_position, 1);
 }
 

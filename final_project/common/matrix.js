@@ -34,13 +34,8 @@ class Mat extends Array{
         }
     }
 
-    /**
-     * Multiplies two matrices
-     * @param {Mat} left the matrix on the left side of the multiplication
-     * @param {Mat} right the matrix on the right side of the multiplication
-     * @returns The product of left and right
-     */
-    static mult(left, right) {
+
+    static __mult__(left, right) {
         if (left.n != right.m) {
             throw "matrix mult size mismatch";
         }
@@ -54,7 +49,17 @@ class Mat extends Array{
                 res.push(ele);
             }
         }
-        return new SquareMat(res);
+        return res;
+    }
+
+    /**
+     * Multiplies two matrices
+     * @param {Mat} left the matrix on the left side of the multiplication
+     * @param {Mat} right the matrix on the right side of the multiplication
+     * @returns The product of left and right
+     */
+    static mult(left, right) {
+        return new Mat(Mat.__mult__(left, right), left.m, right.n);
     }
 
 
@@ -180,7 +185,7 @@ class Mat extends Array{
         for (let i = 0; i < this.length; i++) {
             copy[i] = this[i];
         }
-        return new Mat(copy);
+        return new Mat(copy, this.m, this.n);
     }
 
     toFloat32() {
@@ -257,6 +262,16 @@ class SquareMat extends Mat{
             }
         }
         return new SquareMat(data);
+    }
+
+    /**
+     * Multiplies two matrices
+     * @param {Mat} left the matrix on the left side of the multiplication
+     * @param {Mat} right the matrix on the right side of the multiplication
+     * @returns The product of left and right
+     */
+    static mult(left, right) {
+        return new SquareMat(Mat.__mult__(left, right));
     }
 
     /**
@@ -517,6 +532,9 @@ class SquareMat4 extends SquareMat {
 
 }
 
+/**
+ * Column vector class.
+ */
 class Vec extends Mat{
     constructor(data){
         super(data, data.length, 1);
@@ -545,6 +563,12 @@ class Vec extends Mat{
 
     mag() {
         return Math.sqrt(this.data.map(a => a*a).reduce((a, b) => a + b, 0));
+    }
+
+    scale(scale) {
+        for (let i = 0; i < this.length; i++) {
+            this[i] *= scale;
+        }
     }
 
     normalize() {
@@ -618,6 +642,6 @@ class Vec extends Mat{
         for (let i = 0; i < this.length; i++) {
             copy[i] = this[i];
         }
-        return new Vec(copy);
+        return new Vec(copy, this.length, 1);
     }
 }
