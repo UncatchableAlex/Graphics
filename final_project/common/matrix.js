@@ -236,12 +236,13 @@ class SquareMat extends Mat{
      * @param {Number} theta Angle in radians
      */
     static rot(n, a, b, theta) {
+        let rads = theta * Math.PI / 180;
         if (a > n || n > n || a < 0 || b < 0) {
             throw "axis out of bounds"
         }
         let data = [];
-        let cos = Math.cos(theta);
-        let sin = Math.sin(theta);
+        let cos = Math.cos(rads);
+        let sin = Math.sin(rads);
         for (let j = 0; j < n; j++) {
             for (let i = 0; i < n; i++) {
                 if ((i == a && j == a) || (i == b && j == b)) {
@@ -460,21 +461,18 @@ class SquareMat3 extends SquareMat {
      * @param {Number} theta The angle to rotate in degrees
      */
     static rotx(theta) {
-        theta *= Math.PI/180;
         return SquareMat.rot(3, 1, 2, theta);
     }
      /**
      * @param {Number} theta The angle to rotate in degrees
      */
     static roty(theta) {
-        theta *= Math.PI/180;
         return SquareMat.rot(3, 2, 0, theta);
     }
      /**
      * @param {Number} theta The angle to rotate in degrees
      */
     static rotz(theta) {
-        theta *= Math.PI/180;
         return SquareMat.rot(3, 0, 1, theta);
     }
 
@@ -612,6 +610,15 @@ class Vec extends Mat{
             cross.push(det)
         }
         return new Vec(cross);
+    }
+
+    /**
+     * Get the angle between this vec and another vec
+     * @param {Vec} otherVec 
+     * @returns 
+     */
+    angleBetween(otherVec) {
+        return Math.acos(this.dot(otherVec)) * 180/Math.PI;
     }
 
     dot(otherVec) {

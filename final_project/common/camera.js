@@ -115,8 +115,8 @@ class OrbiterCameraController {
         this.zoomSpeed = zoomSpeed || 500;
         this.rotationSpeed = rotationSpeed || 100;
         this.movementSpeed = movementSpeed || 10;
-        this.pitch = startingPitch || -25
-        this.yaw = startingYaw || 0;
+        this.pitch = startingPitch || 0;
+        this.yaw = startingYaw || -33.02411873840446;
         this.offsetY = 0;
         this.forward = new Vec([0, -1]); // pointing toward -z
     }
@@ -129,29 +129,26 @@ class OrbiterCameraController {
             this.yaw += Input.mousePositionDelta.x * (this.rotationSpeed / this.canvas.height);    // make rotationspeed the same, no matter the height.
             this.pitch += Input.mousePositionDelta.y * (this.rotationSpeed / this.canvas.height);
         }
-        else {
-            let a = 3;
-        }
         let rads = this.yaw * Math.PI/180;
         let distPerFrame = 0.03;
-        this.forward[0] = Math.sin(rads);
-        this.forward[1] = Math.cos(rads);
+        this.forward[0] = -Math.sin(rads); // the x coordinate of our forward vector
+        this.forward[1] = -Math.cos(rads); // the z coordinate of our forward vector (remember that -z is our starting "forward")
         // let the player move around:
         if (Input.keyHold('w')) {
-            this.target.x -= this.forward[0] * distPerFrame;
-            this.target.z -= this.forward[1] * distPerFrame;
-        }
-        if (Input.keyHold('s')) {
             this.target.x += this.forward[0] * distPerFrame;
             this.target.z += this.forward[1] * distPerFrame;
         }
-        if (Input.keyHold('a')) {
-            this.target.z += this.forward[0] * distPerFrame;
-            this.target.x += -this.forward[1] * distPerFrame;
+        if (Input.keyHold('s')) {
+            this.target.x -= this.forward[0] * distPerFrame;
+            this.target.z -= this.forward[1] * distPerFrame;
         }
-        if (Input.keyHold('d')) {
+        if (Input.keyHold('a')) {
             this.target.z += -this.forward[0] * distPerFrame;
             this.target.x += this.forward[1] * distPerFrame;
+        }
+        if (Input.keyHold('d')) {
+            this.target.z += this.forward[0] * distPerFrame;
+            this.target.x += -this.forward[1] * distPerFrame;
         }
 
         this.camera.cameraMatrix = SquareMat.translation([this.target.x, this.offsetY + this.target.y, this.target.z]);
