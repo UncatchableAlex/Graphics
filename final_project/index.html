@@ -106,9 +106,9 @@
 
             renderer.drawModels(fighter, camera, shaderData, [[10, 0, 0]]);
             //renderer.drawModel(ground, camera, shaderData);
-            drawGround(20, shaderData);
+            drawGround(15, shaderData);
             //renderer.drawModels(ground, camera, shaderData, [[-8,-0.3,-6],[-7,-0.3,-7],[-7,-0.3,-6],[-7,-0.3,-5],[-6,-0.3,-8],[-6,-0.3,-7],[-6,-0.3,-6],[-6,-0.3,-5],[-5,-0.3,-8],[-5,-0.3,-7],[-5,-0.3,-6],[-5,-0.3,-5],[-5,-0.3,-4],[-4,-0.3,-9],[-4,-0.3,-8],[-4,-0.3,-7],[-4,-0.3,-6],[-4,-0.3,-5],[-4,-0.3,-4],[-4,-0.3,-3],[-3,-0.3,-9],[-3,-0.3,-8],[-3,-0.3,-7],[-3,-0.3,-6],[-3,-0.3,-5],[-3,-0.3,-4],[-3,-0.3,-3],[-2,-0.3,-9],[-2,-0.3,-8],[-2,-0.3,-7],[-2,-0.3,-6],[-2,-0.3,-5],[-2,-0.3,-4],[-2,-0.3,-3],[-2,-0.3,-2],[-1,-0.3,-6],[-1,-0.3,-5],[-1,-0.3,-4],[-1,-0.3,-3],[-1,-0.3,-2],[-1,-0.3,-1],[0,-0.3,-10],[0,-0.3,-9],[0,-0.3,-8],[0,-0.3,-7],[0,-0.3,-6],[0,-0.3,-5],[0,-0.3,-4],[0,-0.3,-3],[0,-0.3,-2],[0,-0.3,-1],[0,-0.3,0]]);
-            console.log(cameraController.target + "\n" + cameraController.forward + "\n" + cameraController.yaw);
+           // console.log(cameraController.target + "\n" + cameraController.forward + "\n" + cameraController.yaw);
 
         }
 
@@ -120,34 +120,28 @@
             let pos = [];
             let forward = cameraController.forward.clone()
             // get the vector that tracks the left side of the player's vision:
-            let leftVisionVec = new Vec(Mat.mult(SquareMat.rot(2, 0, 1, camera.fov * 1.5), forward));
+            let leftVisionVec = new Vec(Mat.mult(SquareMat.rot(2, 1, 2, camera.fov / 2), forward));
             // get the vector that tracks the right side of the player's vision:
-            let rightVisionVec = new Vec(Mat.mult(SquareMat.rot(2, 1, 0, camera.fov * 1.5), forward));
-            const xMin = Math.min(0, leftVisionVec[0] * radius, rightVisionVec[0] * radius);
-            const xMax = Math.max(0, leftVisionVec[0] * radius, rightVisionVec[0] * radius);
-            for (let i = Math.floor(xMin) - 2; i <= Math.floor(xMax) + 2; i++) {
-                let leftY = i*leftVisionVec[1]/leftVisionVec[0]; // what is the y coordinate of the left vision ray when x == i?
-                let rightY = i*rightVisionVec[1]/rightVisionVec[0]; // what is the y coordinate of the left vision ray when x == i?
-                if ((leftY >= 0) && (leftVisionVec[1] < 0)) { // if the left vision ray would have to invert to reach x == i, then leftY == 0
-                    leftY = -radius;
-                }
-                if ((rightY > 0) && (rightVisionVec[1] < 0)) { // if the left vision ray would have to invert to reach x == i, then leftY == 0
-                    rightY = -radius;
-                }
-                const yMin = Math.min(leftY, rightY);
-                const yMax = Math.max(leftY, rightY);
-                for(let j = Math.floor(yMin) - 2; j <= Math.floor(yMax) + 2; j++) {
-                    if (i*i + j*j > radius*radius) {
-                        continue;
-                    }
+            let rightVisionVec = new Vec(Mat.mult(SquareMat.rot(2, 2, 1, camera.fov / 2), forward));
+            for (let i = -radius; i <= radius; i++) {
+                let arcBound = Math.sqrt((radius + 1) * (radius + 1) - i*i);
+                let visionBound = i * Math.sin(camera.fov / 2)
+
+                let leftVisionBound = leftVisionVec.clone();
+                leftVisionVec.scale(i);
+                let rightVisionBound = rightVisionVec.clone();
+                rightVisionVec.scale(i);
+                
+                for(let x = -arcBound; x <= arcBound; x++) {
                     pos.push([
-                        i*groundScale + Math.floor(cameraController.target.x), 
+                        x*groundScale + Math.floor(cameraController.target.x), 
                         -0.3 * groundScale, 
-                        j*groundScale + Math.floor(cameraController.target.z)]);
+                        i*groundScale + Math.floor(cameraController.target.z)]);
                 }
             }
             renderer.drawModels(ground, camera, shaderData, pos);
         }
+
     </script>
 </body>
 </html>
