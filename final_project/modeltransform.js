@@ -39,11 +39,12 @@ class ModelTransform{
 	}
 
     updateMatrix(){
-        this.modelMatrix = SquareMat.translation([this.position.x,this.position.y,this.position.z]);
-        this.modelMatrix = SquareMat.mult(this.modelMatrix, SquareMat3.roty(this.rotation.y).padded());
-        this.modelMatrix = SquareMat.mult(this.modelMatrix, SquareMat3.rotx(this.rotation.x).padded());
-        this.modelMatrix = SquareMat.mult(this.modelMatrix, SquareMat3.rotz(this.rotation.z).padded());
-        this.modelMatrix = SquareMat.mult(this.modelMatrix, SquareMat.scale([this.scale.x,this.scale.y,this.scale.z, 1]));
+        let buffer = SquareMat.translation([this.position.x,this.position.y,this.position.z]);
+        Mat.mult(buffer, SquareMat3.roty(this.rotation.y).padded(), this.modelMatrix);
+        Mat.mult(this.modelMatrix, SquareMat3.rotx(this.rotation.x).padded(), buffer);
+        Mat.mult(buffer, SquareMat3.rotz(this.rotation.z).padded(), this.modelMatrix);
+        Mat.mult(this.modelMatrix, SquareMat.scale([this.scale.x,this.scale.y,this.scale.z, 1]), buffer);
+        this.modelMatrix = buffer;
     }
 
     // The base Vectors i,j and k of our 4x4 model matrix can be extracted to give us

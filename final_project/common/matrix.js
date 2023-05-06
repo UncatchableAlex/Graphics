@@ -35,21 +35,21 @@ class Mat extends Array{
     }
 
 
-    static __mult__(left, right) {
+    static __mult__(left, right, buffer) {
         if (left.n != right.m) {
             throw "matrix mult size mismatch";
         }
-        let res = [];
+        let idx = 0;
         for (let i = 0; i < right.n; i++) {
             for (let j = 0; j < left.m; j++) {
                 let ele = 0;
                 for (let k = 0; k < left.n; k++) {
                     ele += left[j + left.m*k] * right[k + right.m*i];
                 }
-                res.push(ele);
+                buffer[idx] = ele;
+                idx++;
             }
         }
-        return res;
     }
 
     /**
@@ -58,8 +58,9 @@ class Mat extends Array{
      * @param {Mat} right the matrix on the right side of the multiplication
      * @returns The product of left and right
      */
-    static mult(left, right) {
-        return new Mat(Mat.__mult__(left, right), left.m, right.n);
+    static mult(left, right, buffer) {
+        Mat.__mult__(left, right, buffer);
+        return buffer;
     }
 
 
@@ -272,7 +273,9 @@ class SquareMat extends Mat{
      * @returns The product of left and right
      */
     static mult(left, right) {
-        return new SquareMat(Mat.__mult__(left, right));
+        let res = new SquareMat(Array(left.m * right.n), left.m, right.n);
+        Mat.__mult__(left, right, res);
+        return res;
     }
 
     /**
@@ -613,7 +616,7 @@ class Vec extends Mat{
     }
 
     /**
-     * Get the angle between this vec and another vec
+     * Get the angle between this vec and 
      * @param {Vec} otherVec 
      * @returns 
      */

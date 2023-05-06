@@ -83,7 +83,9 @@
                 // update the position of model and copy its modelMatrix over to matrixData
                 model.position.set(translations[idx]);
                 model.updateMatrix();
-                mat.set(model.modelMatrix, 0);
+                for (let i = 0; i < model.modelMatrix.length; i++) {
+                    mat[i] = model.modelMatrix[i];
+                }
             });
             gl.bindBuffer(gl.ARRAY_BUFFER, matrixBuffer);
             gl.bufferSubData(gl.ARRAY_BUFFER, 0, matrixData);

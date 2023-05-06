@@ -151,10 +151,10 @@ class OrbiterCameraController {
             this.target.x += -this.forward[1] * distPerFrame;
         }
 
-        this.camera.cameraMatrix = SquareMat.translation([this.target.x, this.offsetY + this.target.y, this.target.z]);
-        this.camera.cameraMatrix = SquareMat.mult(this.camera.cameraMatrix, SquareMat3.roty(this.yaw).padded());
-        this.camera.cameraMatrix = SquareMat.mult(this.camera.cameraMatrix, SquareMat3.rotx(this.pitch).padded());
-        this.camera.cameraMatrix = SquareMat.mult(this.camera.cameraMatrix, SquareMat.translation([0,0,this.distance]));
+        let buffer = SquareMat.translation([this.target.x, this.offsetY + this.target.y, this.target.z]);
+        Mat.mult(buffer, SquareMat3.roty(this.yaw).padded(), this.camera.cameraMatrix);
+        Mat.mult(this.camera.cameraMatrix, SquareMat3.rotx(this.pitch).padded(), buffer);
+        Mat.mult(buffer, SquareMat.translation([0,0,this.distance]), this.camera.cameraMatrix);
 
         this.camera.viewMatrix = this.camera.cameraMatrix.clone();
         this.camera.viewMatrix.invert();
