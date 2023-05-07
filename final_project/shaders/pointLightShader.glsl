@@ -16,12 +16,17 @@ uniform mat4 u_matrixP; // the projection matrix of the camera
 // our normals are not stretched when the object is scaled.
 uniform mat4 u_matrixInvTransM;
 
+
+uniform vec4 u_windCoefs; // [amplitude, velocity, frequency, time]
+uniform vec2 u_windDir;
+
 // create new varying v_normal
 varying vec3 v_normal;
 // (for specular) add new varying v_worldPos
 varying vec3 v_worldpos;
 // create a texture varying to get the texture coordinates to the fragment shader:
 varying vec2 v_texcoord;
+varying vec3 v_color;
 void main() {
     // Set v_normal to have the value of a_normal. This means creating a
     // new output for the vertex shader or forwarding a value from the vertex shader
@@ -29,12 +34,22 @@ void main() {
     v_normal = mat3(u_matrixInvTransM) * a_normal;
 
     v_texcoord = a_texcoord;
+    vec3 modelPos = vec4(a_matrixM[3]).xyz; // get the position of this model
+    // find the amount of wind this model is experiencing
+    float windStrength = u_windCoefs[0]*cos(2.0*3.1415*u_windCoefs[1]*(dot(modelPos.xz, u_windDir) - u_windCoefs[2]*u_windCoefs[3]));
+    windStrength += u_windCoefs[0];
+
+    vec3 worldPosBeforeWind = (a_matrixM * vec4(a_position, 1)).xyz;
+    // get the world position of this vertex after accounting for the wind.
+    vec2 windEffect = u_windDir * windStrength * pow(worldPosBeforeWind.y - modelPos.y, 4.0);
+    vec3 pos = a_position + vec3(-windEffect[1], 0, -windEffect[0]);
+
 
     // (For specular) calculate world position
-    v_worldpos = (a_matrixM * vec4(a_position, 1)).xyz;
+    v_worldpos = (a_matrixM * vec4(pos, 1)).xyz;
+    v_color = vec3(windStrength, 0, 0);
     // calculate new position
-    gl_Position = u_matrixP * u_matrixV * a_matrixM * vec4(a_position, 1);
-    //gl_Position = vec4(a_position, 1);
+    gl_Position = u_matrixP * u_matrixV * a_matrixM * vec4(pos, 1);
 }
 
 #endif
@@ -60,6 +75,7 @@ varying vec3 v_normal;
 varying vec3 v_worldpos;
 // add a texture coordinate varying to get the texture coordinates from the vertex shader:
 varying vec2 v_texcoord;
+varying vec3 v_color;
 // add a sampler for our texture
 uniform sampler2D u_mainTex;
 void main(void){
@@ -82,6 +98,7 @@ void main(void){
     vec3 baseColor = texColor * u_tint;
     vec3 result = baseColor * u_lightcolor * (diffuse + ambient + specular) * attenuation;
     gl_FragColor = vec4(result, 1);
+  //  gl_FragColor = vec4(v_color, 1);
 }
 
 #endif

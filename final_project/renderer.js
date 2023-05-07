@@ -7,8 +7,14 @@
         * and assembled into a WebGL ShaderProgram used by this shader to draw models.
         * @param {string} shaderName the source code (text) of this shader programs shader.
         */
-        constructor(shaderName){
+        constructor(shaderName, windDir,  windAmp, windVelocity, windFreq){
+            this.windDir = windDir || new Vec([0,0]);
+            this.windVelocity = windVelocity || 0;
+            this.windAmp = windAmp || 0;
+            this.windFreq = windFreq || 0;
             this.program = GLUtils.createShaderProgram(shaderName);
+            this.date = new Date();
+            this.windDir.normalize();
         }
 
         /**
@@ -67,12 +73,12 @@
             const matrixLoc = gl.getAttribLocation(this.program, 'a_matrixM');
 
             for (let i = 0; i < translations.length; ++i) {
-            const byteOffsetToMatrix = i * 16 * 4;
-            const numFloatsForView = 16;
-            matrices.push(new Float32Array(
-                matrixData.buffer,
-                byteOffsetToMatrix,
-                numFloatsForView));
+                const byteOffsetToMatrix = i * 16 * 4;
+                const numFloatsForView = 16;
+                matrices.push(new Float32Array(
+                    matrixData.buffer,
+                    byteOffsetToMatrix,
+                    numFloatsForView));
             }
             const matrixBuffer = gl.createBuffer();
             gl.bindBuffer(gl.ARRAY_BUFFER, matrixBuffer);
@@ -140,8 +146,8 @@
             // model view and projection matrix uniforms
             let viewMatrix = camera.viewMatrix;
             let projectionMatrix = camera.projectionMatrix;
-        // let modelMatrixLoc = gl.getUniformLocation(this.program, "u_matrixM");
-        // gl.uniformMatrix4fv(modelMatrixLoc, false, model.modelMatrix.toFloat32());
+
+
             let viewMatrixLoc = gl.getUniformLocation(this.program, "u_matrixV");
             gl.uniformMatrix4fv(viewMatrixLoc, false, viewMatrix.toFloat32());
             let projMatrixLoc = gl.getUniformLocation(this.program, "u_matrixP");
@@ -163,5 +169,18 @@
             gl.bindTexture(gl.TEXTURE_2D, mainTexture);
             let mainTexLoc = gl.getUniformLocation(this.program, "u_mainTex");
             gl.uniform1i(mainTexLoc, 0);
+
+
+            // set wind params:
+            let windDirLoc = gl.getUniformLocation(this.program, "u_windDir");
+            gl.uniform2fv(windDirLoc, this.windDir.toFloat32());
+
+            // number of seconds since this renderer object was initialized:
+            let time = (new Date().getTime() - this.date.getTime()) / 1000.0;
+            let windCoefsLoc = gl.getUniformLocation(this.program, "u_windCoefs");
+            gl.uniform4fv(windCoefsLoc, new Float32Array([this.windAmp, this.windVelocity, this.windFreq, time]));
+           // this.windDir[0] = Math.cos(time / 10);
+           // this.windDir[1] = Math.sin(time / 10);
+            //console.log([this.windAmp, this.windVelocity, this.windFreq, time]);
         }
     }

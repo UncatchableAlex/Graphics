@@ -45,6 +45,7 @@
         let ground;
         let wheat;
         let wheatScale;
+        let wheatDensity;
 
         let renderer;
 
@@ -75,7 +76,7 @@
         function init(){
             Input.initialize(canvas);
 
-            renderer = new Renderer("pointLightShader");
+            renderer = new Renderer("pointLightShader", new Vec([0, 1]), 2, 3.7, 0.05);
 
             camera = new PerspectiveCamera(45, 0.1, 1000, canvas.width / canvas.height);
             cameraController = new OrbiterCameraController(canvas, camera, undefined, 0.1);
@@ -89,8 +90,9 @@
             let fighterMesh = OBJLoader.getMesh("fighterMesh", "resources/fighter.obj");
             fighter = new ModelTransform(fighterMesh, fighterMat, new Vec([0,0,-1]));
 
-            let wheatMat = {tint: new Vec([0.5, 0, 0]), mainTexture: "wood", shininess: 20};
+            let wheatMat = {tint: new Vec([168/255, 133/255, 50/255]), mainTexture: "wood", shininess: 20};
             let wheatMesh = OBJLoader.getMesh("wheatMesh", "resources/wheat.obj");
+            wheatDensity = 4;
             wheatScale = 0.1
             wheat = new ModelTransform(wheatMesh, wheatMat, new Vec([0,0,0]), new Vec([0,0,0]), new Vec([wheatScale, wheatScale, wheatScale]));
 
@@ -113,7 +115,8 @@
 
             renderer.drawModels(fighter, camera, shaderData, [[10, 0, 0]]);
             //renderer.drawModel(ground, camera, shaderData);
-            drawGround(10, shaderData);
+            drawGround(5, shaderData);
+           // console.log(cameraController.target);
             //renderer.drawModels(ground, camera, shaderData, [[-8,-0.3,-6],[-7,-0.3,-7],[-7,-0.3,-6],[-7,-0.3,-5],[-6,-0.3,-8],[-6,-0.3,-7],[-6,-0.3,-6],[-6,-0.3,-5],[-5,-0.3,-8],[-5,-0.3,-7],[-5,-0.3,-6],[-5,-0.3,-5],[-5,-0.3,-4],[-4,-0.3,-9],[-4,-0.3,-8],[-4,-0.3,-7],[-4,-0.3,-6],[-4,-0.3,-5],[-4,-0.3,-4],[-4,-0.3,-3],[-3,-0.3,-9],[-3,-0.3,-8],[-3,-0.3,-7],[-3,-0.3,-6],[-3,-0.3,-5],[-3,-0.3,-4],[-3,-0.3,-3],[-2,-0.3,-9],[-2,-0.3,-8],[-2,-0.3,-7],[-2,-0.3,-6],[-2,-0.3,-5],[-2,-0.3,-4],[-2,-0.3,-3],[-2,-0.3,-2],[-1,-0.3,-6],[-1,-0.3,-5],[-1,-0.3,-4],[-1,-0.3,-3],[-1,-0.3,-2],[-1,-0.3,-1],[0,-0.3,-10],[0,-0.3,-9],[0,-0.3,-8],[0,-0.3,-7],[0,-0.3,-6],[0,-0.3,-5],[0,-0.3,-4],[0,-0.3,-3],[0,-0.3,-2],[0,-0.3,-1],[0,-0.3,0]]);
            // console.log(cameraController.target + "\n" + cameraController.forward + "\n" + cameraController.yaw);
 
@@ -134,7 +137,7 @@
             let rightVisionVec = new Vec([0,0]);
             Mat.mult(SquareMat.rot(2, 1, 0, camera.fov * 2), forward, rightVisionVec);
             for (let i = -radius; i <= radius; i++) {
-                let arcBound = Math.sqrt((radius + 1) * (radius + 1) - i*i);
+                let arcBound = Math.round(Math.sqrt((radius + 1) * (radius + 1) - i*i));
                 for(let x = -arcBound; x <= arcBound; x++) {
                     let dist = Math.sqrt(i*i + x*x);
                     let a = leftVisionVec;
@@ -149,11 +152,11 @@
                         x + Math.floor(cameraController.target.x), 
                         -0.3, 
                         i + Math.floor(cameraController.target.z)]);
-                    for (let k = 0; k < 4; k++) {
+                    for (let k = 0; k < wheatDensity ; k++) {
                         wheatPos.push([
-                            x + (k/4) + Math.floor(cameraController.target.x), 
+                            x + (k/wheatDensity) + Math.floor(cameraController.target.x), 
                             -0.5, 
-                            i + (k/4)+ Math.floor(cameraController.target.z)
+                            i + (k/wheatDensity)+ Math.floor(cameraController.target.z)
                         ])
                     }
 

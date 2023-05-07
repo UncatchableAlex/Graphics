@@ -7,11 +7,13 @@ class ModelTransform{
     * @param {Vector3} position the center of the model in world space.
     * @param {Vector3} rotation the rotation of the model (in degrees: x,y,z -> pitch,yaw,roll).
     * @param {Vector3} scale width, height and depth of the model (base is 1/1/1).
+    * @param {Vector3} windAffected is this model affected by wind?
     */
-    constructor(mesh, material, position, rotation, scale){
+    constructor(mesh, material, position, rotation, scale, windAffected){
 
         this.mesh = mesh;
         this.material = material;
+        this.windAffected = windAffected || false;
 
         // set properties of transform (clone vectors to avoid accidental referencing)
         // if position, rotation and scale are not provided in the constructor
